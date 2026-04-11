@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -459,14 +460,16 @@ function b64enc(s) { return btoa(unescape(encodeURIComponent(s))); }
 async function loadEssays() {
   document.getElementById('elist').innerHTML='<div style="padding:8px;font-size:12px;color:var(--muted)">Loading...</div>';
   try {
-    const files=await api(`contents/${WP}`);
-    const html=files.filter(f=>f.name.endsWith('.html')&&f.name!=='index.html');
-    const essays=[];
-    for (const f of html) {
-      const c=await api(`contents/${WP}/${f.name}`);
-      essays.push({...parseMeta(b64dec(c.content),f.name),sha:c.sha});
+    const files = await api(`contents/${WP}`);
+    const htmlFiles = files.filter(f => f.name.endsWith('.html') && f.name !== 'index.html');
+    const essays = [];
+    for (const f of htmlFiles) {
+      const c = await api(`contents/${WP}/${f.name}`);
+      const html = b64dec(c.content);
+      const parsed = parseMeta(html, f.name);
+      essays.push({ ...parsed, sha: null }); // always fetch fresh sha at save time
     }
-    S.essays=essays; renderList();
+    S.essays = essays; renderList();
   } catch(e) {
     document.getElementById('elist').innerHTML='<div style="padding:8px;font-size:12px;color:var(--muted)">Check settings ↗</div>';
   }
@@ -531,6 +534,8 @@ function showEssayPane() {
   document.getElementById('draft-btn').style.display='';
   document.getElementById('pub-btn').style.display='';
   document.getElementById('pub-btn').textContent='Publish →';
+  document.getElementById('draft-btn').disabled = true;
+  document.getElementById('pub-btn').disabled = true;
 }
 
 // HOME
@@ -606,7 +611,7 @@ function onEdit() {
   markDirty(); handleSlash('essay'); scheduleAutoSave();
 }
 function onHomeEdit() { S.homeDirty=true; setStatus('Unsaved changes'); handleSlash('home'); scheduleAutoSave(); }
-function markDirty() { S.dirty=true; setStatus('Unsaved changes'); }
+function markDirty() { S.dirty=true; setStatus('Unsaved changes'); document.getElementById('draft-btn').disabled = false; document.getElementById('pub-btn').disabled = false; }
 function setStatus(msg) { document.getElementById('status').textContent=msg; }
 
 // SLUG — only auto when field is empty and user hasn't manually typed
@@ -779,27 +784,28 @@ function insertVideo(url) {
 function triggerImg() { document.getElementById(S.mode==='home'?'fhimg':'fimg').click(); }
 function insertImg(input, mode) {
   const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const dataUrl = ev.target.result;
-    if (file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic') {
-      const img2 = new Image();
-      img2.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img2.width; canvas.height = img2.height;
-        canvas.getContext('2d').drawImage(img2, 0, 0);
-        placeImage(canvas.toDataURL('image/jpeg', 0.9), mode);
-      };
-      img2.src = dataUrl;
-    } else {
-      placeImage(dataUrl, mode);
-    }
-  };
-  reader.readAsDataURL(file); input.value = '';
+  const name = file.name.toLowerCase();
+  const isHeic = name.endsWith('.heic') || name.endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
+  if (isHeic) {
+    toast('Converting image...');
+    heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = ev => placeImage(ev.target.result, mode);
+        reader.readAsDataURL(blob);
+      })
+      .catch(e => toast('Could not convert: ' + e.message, true));
+  } else {
+    const reader = new FileReader();
+    reader.onload = ev => placeImage(ev.target.result, mode);
+    reader.readAsDataURL(file);
+  }
+  input.value = '';
 }
 function placeImage(src, mode) {
   const img = document.createElement('img');
-  img.src = src; img.style.maxWidth = '100%'; img.style.display = 'block'; img.style.margin = '1em 0'; img.style.borderRadius = '3px';
+  img.src = src;
+  img.style.cssText = 'max-width:100%;display:block;margin:1em 0;border-radius:3px';
   img.setAttribute('contenteditable', 'false');
   const ed = document.getElementById(mode === 'home' ? 'home-editor' : 'editor');
   ed.focus();
@@ -807,10 +813,10 @@ function placeImage(src, mode) {
   if (sel && sel.rangeCount) {
     const r = sel.getRangeAt(0); r.collapse(false);
     r.insertNode(img);
-    const br = document.createElement('p'); br.innerHTML = '<br>';
-    img.parentNode.insertBefore(br, img.nextSibling);
+    const p = document.createElement('p'); p.innerHTML = '<br>';
+    img.parentNode.insertBefore(p, img.nextSibling);
     const newRange = document.createRange();
-    newRange.setStart(br, 0); newRange.collapse(true);
+    newRange.setStart(p, 0); newRange.collapse(true);
     sel.removeAllRanges(); sel.addRange(newRange);
   } else {
     ed.appendChild(img);
@@ -913,9 +919,14 @@ function essayData() {
 }
 
 async function save(status, auto=false) {
-  if(S.publishing) return;
-  if(S.mode==='essay') await saveEssay(status,auto);
-  else if(S.mode==='home') await saveHome(auto);
+  if (S.publishing) return;
+  if (S.mode === 'essay') {
+    const slug = document.getElementById('eslug').value.trim();
+    if (!slug) { toast('Add a URL slug before publishing', true); return; }
+    await saveEssay(status, auto);
+  } else if (S.mode === 'home') {
+    await saveHome(auto);
+  }
 }
 
 async function saveEssay(status, auto=false) {
@@ -990,10 +1001,18 @@ async function saveHome(auto=false) {
 
 async function saveIndex() {
   const html = buildIndex(S.essays);
+  const encoded = b64enc(html);
   const path = `${WP}/index.html`;
   let sha = null;
-  try { const ex = await api(`contents/${path}`); sha = ex.sha; } catch(e) { sha = null; }
-  await api(`contents/${path}`, 'PUT', { message: 'Update writing index', content: b64enc(html), sha: sha || undefined });
+  try {
+    const ex = await api(`contents/${path}`);
+    sha = ex.sha;
+  } catch(e) { sha = null; }
+  await api(`contents/${path}`, 'PUT', {
+    message: 'Update writing index',
+    content: encoded,
+    sha: sha || undefined
+  });
 }
 
 // DELETE
@@ -1037,8 +1056,8 @@ function buildIndex(essays){
     <div style="display:flex;align-items:center;gap:8px;padding:3px 0">
       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" style="flex-shrink:0;opacity:0.4"><rect x="2" y="1" width="9" height="12" rx="1" stroke="#37352f" stroke-width="1.1"/><path d="M4 5h5M4 7.5h5M4 10h3" stroke="#37352f" stroke-width=".9" stroke-linecap="round"/></svg>
       <span style="display:inline-flex;align-items:baseline;gap:6px">
-        <a href="/writing/${e.slug}" style="font-size:14px;color:#37352f;text-decoration:none;border-bottom:1px solid #e3e2df;padding-bottom:1px">${esc(e.title)}</a>
-        <span style="font-size:12px;color:#9b9a97;white-space:nowrap">${e.date||e.readtime?'('+[e.date,e.readtime?e.readtime+' read':''].filter(Boolean).join(' · ')+')':''}</span>
+        <a href="/writing/${e.slug}" style="font-size:15px;color:#37352f;text-decoration:none;border-bottom:1px solid #e3e2df;padding-bottom:1px">${esc(e.title)}</a>
+        <span style="font-size:13px;color:#9b9a97;white-space:nowrap">${e.date||e.readtime?'('+[e.date,e.readtime?e.readtime+' read':''].filter(Boolean).join(' · ')+')':''}</span>
       </span>
     </div>`).join('')}
   `).join('');
@@ -1111,12 +1130,18 @@ document.getElementById('home-editor').addEventListener('paste',stripPaste);
   ed.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
   ed.addEventListener('drop', e => {
     e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    const file = e.dataTransfer.files[0]; if (!file) return;
     const mode = edId === 'home-editor' ? 'home' : 'essay';
-    const reader = new FileReader();
-    reader.onload = ev => placeImage(ev.target.result, mode);
-    reader.readAsDataURL(file);
+    const name = file.name.toLowerCase();
+    const isHeic = name.endsWith('.heic') || name.endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
+    if (isHeic) {
+      toast('Converting image...');
+      heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+        .then(blob => { const reader = new FileReader(); reader.onload = ev => placeImage(ev.target.result, mode); reader.readAsDataURL(blob); })
+        .catch(err => toast('Could not convert: ' + err.message, true));
+    } else if (file.type.startsWith('image/')) {
+      const reader = new FileReader(); reader.onload = ev => placeImage(ev.target.result, mode); reader.readAsDataURL(file);
+    }
   });
 });
 
