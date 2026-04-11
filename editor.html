@@ -777,19 +777,45 @@ function insertVideo(url) {
 
 // IMAGES
 function triggerImg() { document.getElementById(S.mode==='home'?'fhimg':'fimg').click(); }
-function insertImg(input,mode) {
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const img=document.createElement('img'); img.src=ev.target.result; img.style.maxWidth='100%';
-    const ed=document.getElementById(mode==='home'?'home-editor':'editor');
-    ed.focus();
-    const sel=window.getSelection();
-    if(sel&&sel.rangeCount){const r=sel.getRangeAt(0);r.insertNode(img);r.collapse(false);}
-    else ed.appendChild(img);
-    if(mode==='home') onHomeEdit(); else onEdit();
+function insertImg(input, mode) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    if (file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic') {
+      const img2 = new Image();
+      img2.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img2.width; canvas.height = img2.height;
+        canvas.getContext('2d').drawImage(img2, 0, 0);
+        placeImage(canvas.toDataURL('image/jpeg', 0.9), mode);
+      };
+      img2.src = dataUrl;
+    } else {
+      placeImage(dataUrl, mode);
+    }
   };
-  reader.readAsDataURL(file); input.value='';
+  reader.readAsDataURL(file); input.value = '';
+}
+function placeImage(src, mode) {
+  const img = document.createElement('img');
+  img.src = src; img.style.maxWidth = '100%'; img.style.display = 'block'; img.style.margin = '1em 0'; img.style.borderRadius = '3px';
+  img.setAttribute('contenteditable', 'false');
+  const ed = document.getElementById(mode === 'home' ? 'home-editor' : 'editor');
+  ed.focus();
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const r = sel.getRangeAt(0); r.collapse(false);
+    r.insertNode(img);
+    const br = document.createElement('p'); br.innerHTML = '<br>';
+    img.parentNode.insertBefore(br, img.nextSibling);
+    const newRange = document.createRange();
+    newRange.setStart(br, 0); newRange.collapse(true);
+    sel.removeAllRanges(); sel.addRange(newRange);
+  } else {
+    ed.appendChild(img);
+  }
+  if (mode === 'home') onHomeEdit(); else onEdit();
 }
 
 // FORMAT
@@ -934,8 +960,8 @@ async function saveHome(auto=false) {
   try {
     const content=document.getElementById('home-editor').innerHTML;
     const html=buildHome(content);
-    let sha=S.homeSha;
-    if(!sha){try{const ex=await api('contents/index.html');sha=ex.sha;}catch(e){}}
+    let sha=null;
+    try { const ex=await api('contents/index.html'); sha=ex.sha; S.homeSha=ex.sha; } catch(e) { sha=null; }
     const result=await api('contents/index.html','PUT',{message:'Update home page',content:b64enc(html),sha:sha||undefined});
     S.homeSha=result.content?.sha||null; S.homeDirty=false;
     const now=new Date(); setStatus(`Saved at ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
@@ -946,7 +972,8 @@ async function saveHome(auto=false) {
 
 async function saveIndex() {
   const html=buildIndex(S.essays); const path=`${WP}/index.html`;
-  let sha=null; try{const ex=await api(`contents/${path}`);sha=ex.sha;}catch(e){}
+  let sha=null;
+  try { const ex=await api(`contents/${path}`); sha=ex.sha; } catch(e) { sha=null; }
   await api(`contents/${path}`,'PUT',{message:'Update writing index',content:b64enc(html),sha:sha||undefined});
 }
 
@@ -971,23 +998,64 @@ async function confirmDelete() {
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 function buildEssay(d,status){
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="essay-title" content="${esc(d.title)}"><meta name="essay-date" content="${esc(d.date)}"><meta name="essay-readtime" content="${esc(d.readtime)}"><meta name="essay-status" content="${status}"><title>${esc(d.title)} — Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;-webkit-font-smoothing:antialiased}.site{max-width:640px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:2.5rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover{color:#37352f}.back{font-size:13px;color:#9b9a97;text-decoration:none;display:inline-block;margin-bottom:2rem}.back:hover{color:#37352f}.essay-title-h{font-size:26px;font-weight:500;line-height:1.25;margin-bottom:8px}.essay-meta{font-size:13px;color:#9b9a97;margin-bottom:2rem}hr{border:none;border-top:1px solid #e3e2df;margin:0 0 2rem}.essay-body{font-size:15px;line-height:1.85}.essay-body p{margin:0 0 1em}.essay-body h1{font-size:20px;font-weight:500;margin:1.4em 0 .5em}.essay-body h2{font-size:16px;font-weight:500;margin:1.2em 0 .4em}.essay-body img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.essay-body iframe{width:100%;aspect-ratio:16/9;border-radius:6px;margin:1.5em 0;border:none;display:block}.essay-body strong{font-weight:500}.essay-body em{font-style:italic}.essay-body a{color:#2383e2;text-decoration:none}.essay-body blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0;font-style:italic}.essay-body ul,.essay-body ol{padding-left:22px;margin:0 0 1em}.essay-body li{margin-bottom:.25em}</style></head><body><div class="site"><nav><a href="/">Dilina</a><a href="/writing">Writing</a></nav><a class="back" href="/writing">← Back</a><h1 class="essay-title-h">${esc(d.title)}</h1><div class="essay-meta">${esc(d.date)}${d.readtime?' · '+esc(d.readtime)+' read':''}</div><hr><div class="essay-body">${d.body}</div></div></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="essay-title" content="${esc(d.title)}"><meta name="essay-date" content="${esc(d.date)}"><meta name="essay-readtime" content="${esc(d.readtime)}"><meta name="essay-status" content="${status}"><title>${esc(d.title)} — Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;-webkit-font-smoothing:antialiased}.site{max-width:640px;margin:0 auto;padding:2rem 2rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:2.5rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover{color:#37352f}.back{font-size:13px;color:#9b9a97;text-decoration:none;display:inline-block;margin-bottom:2rem}.back:hover{color:#37352f}.essay-title-h{font-size:26px;font-weight:500;line-height:1.25;margin-bottom:8px}.essay-meta{font-size:13px;color:#9b9a97;margin-bottom:2rem}hr{border:none;border-top:1px solid #e3e2df;margin:0 0 2rem}.essay-body{font-size:15px;line-height:1.85}.essay-body p{margin:0 0 1em}.essay-body h1{font-size:20px;font-weight:500;margin:1.4em 0 .5em}.essay-body h2{font-size:16px;font-weight:500;margin:1.2em 0 .4em}.essay-body img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.essay-body iframe{width:100%;aspect-ratio:16/9;border-radius:6px;margin:1.5em 0;border:none;display:block}.essay-body strong{font-weight:500}.essay-body em{font-style:italic}.essay-body a{color:#2383e2;text-decoration:none}.essay-body blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0;font-style:italic}.essay-body ul,.essay-body ol{padding-left:22px;margin:0 0 1em}.essay-body li{margin-bottom:.25em}</style></head><body><div class="site"><nav><a href="/">Dilina</a><a href="/writing">Writing</a></nav><a class="back" href="/writing">← Back</a><h1 class="essay-title-h">${esc(d.title)}</h1><div class="essay-meta">${esc(d.date)}${d.readtime?' · '+esc(d.readtime)+' read':''}</div><hr><div class="essay-body">${d.body}</div></div></body></html>`;
 }
 
 function buildHome(content){
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;-webkit-font-smoothing:antialiased}.site{max-width:640px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:3rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none;transition:color .1s}nav a:hover,nav a.active{color:#37352f}.content{font-size:15px;line-height:1.85}.content p{margin:0 0 .9em}.content a{color:#2383e2;text-decoration:none}.content img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.content strong{font-weight:500}.content em{font-style:italic}.content h1{font-size:20px;font-weight:500;margin:1.4em 0 .5em}.content h2{font-size:16px;font-weight:500;margin:1.2em 0 .4em}.content blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0;font-style:italic}.content ul,.content ol{padding-left:22px;margin:0 0 1em}.content li{margin-bottom:.25em}</style></head><body><div class="site"><nav><a href="/" class="active">Dilina</a><a href="/writing">Writing</a></nav><div class="content">${content}</div></div></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;-webkit-font-smoothing:antialiased}.site{max-width:640px;margin:0 auto;padding:2rem 2rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:3rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none;transition:color .1s}nav a:hover,nav a.active{color:#37352f}.content{font-size:15px;line-height:1.85}.content p{margin:0 0 .9em}.content a{color:#2383e2;text-decoration:none}.content img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.content strong{font-weight:500}.content em{font-style:italic}.content h1{font-size:20px;font-weight:500;margin:1.4em 0 .5em}.content h2{font-size:16px;font-weight:500;margin:1.2em 0 .4em}.content blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0;font-style:italic}.content ul,.content ol{padding-left:22px;margin:0 0 1em}.content li{margin-bottom:.25em}</style></head><body><div class="site"><nav><a href="/" class="active">Dilina</a><a href="/writing">Writing</a></nav><div class="content">${content}</div></div></body></html>`;
 }
 
 function buildIndex(essays){
   const pub=essays.filter(e=>e.status!=='draft'); const by={};
-  pub.forEach(e=>{const y=(e.date||'').split(' ').pop()||'Undated';if(!by[y])by[y]=[];by[y].push(e);});
+  pub.forEach(e=>{
+    const y=(e.date||'').split(' ').pop()||'Undated';
+    if(!by[y])by[y]=[];by[y].push(e);
+  });
   const years=Object.keys(by).sort((a,b)=>b-a);
-  const rows=years.map(y=>`<p style="font-size:13px;color:#9b9a97;margin:0 0 6px">${y}</p><ul style="list-style:none;padding:0;margin:0 0 2.5rem">${by[y].map(e=>`<li style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #e3e2df"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="flex-shrink:0;margin-top:3px;opacity:.3"><rect x="2" y="1" width="9" height="12" rx="1" stroke="#37352f" stroke-width="1.1"/><path d="M4 5h5M4 7.5h5M4 10h3" stroke="#37352f" stroke-width=".9" stroke-linecap="round"/></svg><div><a href="/writing/${e.slug}" style="font-size:14px;color:#37352f;text-decoration:none;display:block;line-height:1.5">${esc(e.title)}</a><div style="font-size:12px;color:#9b9a97;margin-top:2px">${esc(e.date)}${e.readtime?' · '+esc(e.readtime):''}</div></div></li>`).join('')}</ul>`).join('');
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Writing — Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;-webkit-font-smoothing:antialiased}.site{max-width:640px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:3rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover,nav a.active{color:#37352f}h1{font-size:20px;font-weight:500;margin:0 0 2rem}ul li:first-child{border-top:1px solid #e3e2df}</style></head><body><div class="site"><nav><a href="/">Dilina</a><a href="/writing" class="active">Writing</a></nav><h1>Writing</h1>${rows||'<p style="font-size:14px;color:#9b9a97">No essays yet.</p>'}</div></body></html>`;
+  const rows=years.map(y=>`
+    <p style="font-size:13px;color:#9b9a97;margin:${y===years[0]?'0':'2rem'} 0 4px">${y}</p>
+    ${by[y].map(e=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" style="flex-shrink:0;opacity:0.4"><rect x="2" y="1" width="9" height="12" rx="1" stroke="#37352f" stroke-width="1.1"/><path d="M4 5h5M4 7.5h5M4 10h3" stroke="#37352f" stroke-width=".9" stroke-linecap="round"/></svg>
+      <span style="display:inline-flex;align-items:baseline;gap:6px">
+        <a href="/writing/${e.slug}" style="font-size:14px;color:#37352f;text-decoration:none;border-bottom:1px solid #e3e2df;padding-bottom:1px">${esc(e.title)}</a>
+        <span style="font-size:12px;color:#9b9a97;white-space:nowrap">${e.date||e.readtime?'('+[e.date,e.readtime?e.readtime+' read':''].filter(Boolean).join(' · ')+')':''}</span>
+      </span>
+    </div>`).join('')}
+  `).join('');
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Writing — Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;-webkit-font-smoothing:antialiased}.site{max-width:640px;margin:0 auto;padding:2rem 2rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:1.5rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover,nav a.active{color:#37352f}h1{font-size:20px;font-weight:500;margin:0 0 1.25rem}</style></head><body><div class="site"><nav><a href="/">Dilina</a><a href="/writing" class="active">Writing</a></nav><h1>Writing</h1>${rows||'<p style="font-size:14px;color:#9b9a97">No essays yet.</p>'}</div></body></html>`;
 }
 
 // KEYBOARD SHORTCUTS
 document.addEventListener('keydown',e=>{
+  if (e.key === 'Enter' && document.getElementById('slash-menu').style.display === 'block') {
+    e.preventDefault();
+    doSlash('image');
+    return;
+  }
+  if (e.key === 'Backspace') {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      const range = sel.getRangeAt(0);
+      if (range.collapsed) {
+        const node = range.startContainer;
+        const offset = range.startOffset;
+        let imgToDelete = null;
+        if (node.nodeType === 1 && offset > 0 && node.childNodes[offset-1] && node.childNodes[offset-1].tagName === 'IMG') {
+          imgToDelete = node.childNodes[offset-1];
+        }
+        if (!imgToDelete && node.previousSibling && node.previousSibling.tagName === 'IMG') {
+          imgToDelete = node.previousSibling;
+        }
+        if (imgToDelete) {
+          e.preventDefault();
+          imgToDelete.parentNode.removeChild(imgToDelete);
+          if (S.mode === 'home') onHomeEdit(); else onEdit();
+          return;
+        }
+      }
+    }
+  }
   const inEd=S.mode==='essay'||S.mode==='home';
   if(e.key==='Escape'){hideSlash();closeLink();closeVideoPopup();closeVPanel();if(S.dnd)toggleDND();}
   if((e.metaKey||e.ctrlKey)&&e.key==='b'&&inEd){e.preventDefault();fmt('bold');}
@@ -1018,6 +1086,20 @@ function stripPaste(e){
 }
 document.getElementById('editor').addEventListener('paste',stripPaste);
 document.getElementById('home-editor').addEventListener('paste',stripPaste);
+
+['editor', 'home-editor'].forEach(edId => {
+  const ed = document.getElementById(edId);
+  ed.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  ed.addEventListener('drop', e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const mode = edId === 'home-editor' ? 'home' : 'essay';
+    const reader = new FileReader();
+    reader.onload = ev => placeImage(ev.target.result, mode);
+    reader.readAsDataURL(file);
+  });
+});
 
 document.addEventListener('click',e=>{
   if(!e.target.closest('#slash-menu')) hideSlash();
