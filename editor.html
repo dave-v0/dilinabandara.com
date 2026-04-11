@@ -191,6 +191,7 @@
       <button class="btn btn-danger" id="delete-btn" onclick="deleteEssay()" style="display:none">delete</button>
       <button class="btn" id="draft-btn" onclick="saveToGithub('draft')" style="display:none">save draft</button>
       <button class="btn btn-primary" id="publish-btn" onclick="saveToGithub('published')" style="display:none">publish →</button>
+      <button class="btn btn-primary" id="home-publish-btn" onclick="publishHomePage()" style="display:none">publish home →</button>
     </div>
   </div>
   <div id="empty-state">
@@ -234,12 +235,28 @@
     </div>
   </div>
 </div>
+<div id="home-pane" style="display:none;flex:1;overflow-y:auto">
+  <div style="max-width:660px;margin:0 auto;padding:32px 48px 120px">
+    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">bio</div>
+    <textarea id="home-bio" style="width:100%;min-height:160px;font-family:var(--font);font-size:15px;line-height:1.85;color:var(--text);background:transparent;border:none;outline:none;resize:none;padding:0" placeholder="write your bio here, one line per paragraph..." oninput="markHomeDirty()"></textarea>
+    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin:32px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)">photo</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <img id="home-photo-preview" src="" alt="" style="width:80px;height:54px;border-radius:3px;object-fit:cover;display:none;border:1px solid var(--border)" />
+      <button onclick="document.getElementById('home-img-input').click()" style="font-size:13px;color:var(--text-muted);cursor:pointer;padding:5px 10px;border:1px dashed var(--border);border-radius:4px;background:none;font-family:var(--font)">+ upload photo</button>
+      <span id="home-photo-name" style="font-size:12px;color:var(--text-muted)"></span>
+    </div>
+    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin:32px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)">previous work</div>
+    <div id="prev-work-list" style="margin-bottom:12px"></div>
+    <button onclick="addWorkItem()" style="font-size:13px;color:var(--text-muted);cursor:pointer;background:none;border:none;font-family:var(--font);padding:0">+ add project</button>
+  </div>
+</div>
 <div id="toast"></div>
 <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImg(this)" />
+<input type="file" id="home-img-input" accept="image/*" style="display:none" onchange="handleHomePhoto(this)" />
 <script>
 const PASSWORD = 'dilina2026';
 const WRITING_PATH = 'writing';
-let state = { essays: [], currentId: null, dirty: false, publishing: false, pendingDelete: null };
+let state = { essays:[], currentId:null, dirty:false, publishing:false, pendingDelete:null, mode:'empty', homePhoto:null, homeSha:null, homeDirty:false, prevWork:[] };
 function gh() { return { token: localStorage.getItem('gh_token')||'', user: localStorage.getItem('gh_user')||'', repo: localStorage.getItem('gh_repo')||'' }; }
 function tryLogin() {
   if (document.getElementById('pw-input').value === PASSWORD) {
@@ -255,6 +272,7 @@ function init() {
   if (!g.token||!g.user||!g.repo) { openSettings(); return; }
   document.getElementById('sidebar-user').textContent = g.user+'/'+g.repo;
   loadEssays();
+  loadHomePage();
 }
 function openSettings() { const g=gh(); document.getElementById('s-token').value=g.token; document.getElementById('s-user').value=g.user; document.getElementById('s-repo').value=g.repo; document.getElementById('settings-modal').classList.remove('hidden'); }
 function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
@@ -359,6 +377,68 @@ let toastTimer;
 function toast(msg,err=false) { const el=document.getElementById('toast'); el.textContent=msg; el.className='show'+(err?' error':''); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='',2800); }
 document.addEventListener('keydown',e=>{ if ((e.metaKey||e.ctrlKey)&&e.key==='s') { e.preventDefault(); if(state.currentId) saveToGithub('draft'); } if ((e.metaKey||e.ctrlKey)&&e.key==='Enter') { e.preventDefault(); if(state.currentId) saveToGithub('published'); } });
 window.addEventListener('beforeunload',e=>{ if(state.dirty){e.preventDefault();e.returnValue='';} });
+function showHomeEditor() {
+  if (state.dirty&&!confirm('unsaved changes. switch anyway?')) return;
+  state.mode='home'; state.currentId=null;
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('editor-pane').style.display='none';
+  document.getElementById('home-pane').style.display='block';
+  document.getElementById('draft-btn').style.display='none';
+  document.getElementById('publish-btn').style.display='none';
+  document.getElementById('delete-btn').style.display='none';
+  document.getElementById('home-publish-btn').style.display='';
+  document.getElementById('home-nav-btn').classList.add('active');
+  renderSidebar(); updateStatus('home page');
+}
+function markHomeDirty() { state.homeDirty=true; updateStatus('unsaved changes'); }
+async function loadHomePage() {
+  try {
+    const c=await ghApi('contents/index.html');
+    const html=decodeURIComponent(escape(atob(c.content.replace(/\n/g,''))));
+    state.homeSha=c.sha; parseHomePage(html);
+  } catch(e) {}
+}
+function parseHomePage(html) {
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const paras=doc.querySelectorAll('.content p'); const lines=[];
+  paras.forEach(p=>{ const c=p.cloneNode(true); c.querySelectorAll('a').forEach(a=>a.replaceWith(a.textContent)); lines.push(c.textContent.trim()); });
+  document.getElementById('home-bio').value=lines.join('\n');
+  const img=doc.querySelector('.photo img');
+  if (img) { const src=img.getAttribute('src'); if(src&&src!=='/images/desk.jpg'){state.homePhoto=src;const preview=document.getElementById('home-photo-preview');preview.src=src;preview.style.display='block';} }
+  state.prevWork=[];
+  doc.querySelectorAll('.prev-item').forEach(item=>{ const a=item.querySelector('a'); const span=item.querySelector('span'); state.prevWork.push({name:a?.textContent?.trim()||'',url:a?.getAttribute('href')||'#',desc:(span?.textContent?.trim()||'').replace(/^—\s*/,'')}); });
+  renderPrevWork();
+}
+function renderPrevWork() {
+  document.getElementById('prev-work-list').innerHTML=(state.prevWork||[]).map((w,i)=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input style="font-family:var(--font);font-size:13px;color:var(--text);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;padding:3px 0;width:110px" value="${esc(w.name)}" placeholder="project name" oninput="updateWork(${i},'name',this.value)" /><input style="font-family:var(--font);font-size:13px;color:var(--text-muted);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;padding:3px 0;width:130px" value="${esc(w.url==='#'?'':w.url)}" placeholder="url (optional)" oninput="updateWork(${i},'url',this.value)" /><input style="font-family:var(--font);font-size:13px;color:var(--text);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;padding:3px 0;flex:1" value="${esc(w.desc)}" placeholder="short description" oninput="updateWork(${i},'desc',this.value)" /><button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 4px" onclick="removeWork(${i})">×</button></div>`).join('');
+}
+function updateWork(i,k,v) { state.prevWork[i][k]=v; markHomeDirty(); }
+function removeWork(i) { state.prevWork.splice(i,1); renderPrevWork(); markHomeDirty(); }
+function addWorkItem() { state.prevWork.push({name:'',url:'',desc:''}); renderPrevWork(); markHomeDirty(); }
+function handleHomePhoto(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{ state.homePhoto=e.target.result; const preview=document.getElementById('home-photo-preview'); preview.src=state.homePhoto; preview.style.display='block'; document.getElementById('home-photo-name').textContent=file.name; markHomeDirty(); };
+  reader.readAsDataURL(file); input.value='';
+}
+function buildHomeHtml() {
+  const lines=document.getElementById('home-bio').value.split('\n').filter(l=>l.trim());
+  const bioHtml=lines.map(l=>`    <p>${esc(l)}</p>`).join('\n');
+  const photoSrc=state.homePhoto||'/images/desk.jpg';
+  const workHtml=(state.prevWork||[]).map(w=>`  <div class="prev-item"><a href="${esc(w.url||'#')}" target="_blank">${esc(w.name)}</a><span>— ${esc(w.desc)}</span></div>`).join('\n');
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>dilina bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;font-weight:400;-webkit-font-smoothing:antialiased}.site{max-width:620px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:3rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none;transition:color 0.1s}nav a:hover{color:#37352f}nav a.active{color:#37352f}.content p{font-size:15px;line-height:1.85;margin:0 0 0.9em;color:#37352f}.content a{color:#5b8dd9;text-decoration:none}.content a:hover{text-decoration:underline}.photo{margin:1.75rem 0;border-radius:3px;overflow:hidden;max-width:420px}.photo img{width:100%;display:block;border-radius:3px}hr{border:none;border-top:1px solid #e3e2df;margin:2rem 0}.section-label{font-size:14px;color:#37352f;margin-bottom:0.75rem;font-weight:500}.prev-item{display:flex;align-items:baseline;gap:6px;padding:4px 0;font-size:14px}.prev-item::before{content:'·';color:#9b9a97;flex-shrink:0}.prev-item a{color:#5b8dd9;text-decoration:none}.prev-item a:hover{text-decoration:underline}.prev-item span{color:#9b9a97;font-size:13px}</style></head><body><div class="site"><nav><a href="/" class="active">dilina</a><a href="/writing">writing</a></nav><div class="content">\n${bioHtml}\n  </div><div class="photo"><img src="${photoSrc}" alt="dilina" /></div><hr><p class="section-label">previous work</p>\n${workHtml}\n</div></body></html>`;
+}
+async function publishHomePage() {
+  const g=gh(); if(!g.token){openSettings();return;}
+  const btn=document.getElementById('home-publish-btn'); const orig=btn.innerHTML; btn.innerHTML='<span class="spinner"></span>'; btn.disabled=true;
+  try {
+    const html=buildHomeHtml(); const encoded=btoa(unescape(encodeURIComponent(html)));
+    let sha=state.homeSha||null; if(!sha){try{const ex=await ghApi('contents/index.html');sha=ex.sha;}catch(e){}}
+    const result=await ghApi('contents/index.html','PUT',{message:'update home page',content:encoded,sha:sha||undefined});
+    state.homeSha=result.content?.sha||null; state.homeDirty=false; updateStatus('saved'); toast('home page published!');
+  } catch(e) { toast('error: '+e.message,true); }
+  finally { btn.innerHTML=orig; btn.disabled=false; }
+}
 </script>
 </body>
 </html>
