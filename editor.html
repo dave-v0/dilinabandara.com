@@ -214,6 +214,20 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* IMAGE RESIZE */
+.img-wrapper { display: flex; justify-content: center; align-items: center; position: relative; margin: 1em 0; width: 100%; }
+.img-wrapper img { display: block; border-radius: 3px; }
+.img-wrapper .resize-handle { position: absolute; top: 50%; transform: translateY(-50%); width: 8px; height: 48px; background: white; border: 1px solid #ccc; border-radius: 4px; cursor: col-resize; opacity: 0; transition: opacity 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+.img-wrapper .resize-handle.left { left: calc(50% - var(--img-half) - 12px); }
+.img-wrapper .resize-handle.right { right: calc(50% - var(--img-half) - 12px); }
+.img-wrapper:hover .resize-handle { opacity: 1; }
+.img-wrapper.selected .resize-handle { opacity: 1; }
+
+/* BUTTON TOOLTIP */
+.btn[disabled] { cursor: not-allowed; position: relative; }
+.btn[disabled]:hover::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #37352f; color: white; font-size: 11px; padding: 5px 10px; border-radius: 4px; white-space: nowrap; pointer-events: none; font-family: var(--font); }
+.btn[disabled]:hover::before { content: ''; position: absolute; bottom: calc(100% + 1px); left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #37352f; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -536,6 +550,8 @@ function showEssayPane() {
   document.getElementById('pub-btn').textContent='Publish →';
   document.getElementById('draft-btn').disabled = true;
   document.getElementById('pub-btn').disabled = true;
+  document.getElementById('draft-btn').setAttribute('data-tooltip', 'No changes to save');
+  document.getElementById('pub-btn').setAttribute('data-tooltip', 'No changes to save');
 }
 
 // HOME
@@ -611,7 +627,7 @@ function onEdit() {
   markDirty(); handleSlash('essay'); scheduleAutoSave();
 }
 function onHomeEdit() { S.homeDirty=true; setStatus('Unsaved changes'); handleSlash('home'); scheduleAutoSave(); }
-function markDirty() { S.dirty=true; setStatus('Unsaved changes'); document.getElementById('draft-btn').disabled = false; document.getElementById('pub-btn').disabled = false; }
+function markDirty() { S.dirty=true; setStatus('Unsaved changes'); document.getElementById('draft-btn').disabled = false; document.getElementById('pub-btn').disabled = false; document.getElementById('draft-btn').setAttribute('data-tooltip', ''); document.getElementById('pub-btn').setAttribute('data-tooltip', ''); }
 function setStatus(msg) { document.getElementById('status').textContent=msg; }
 
 // SLUG — only auto when field is empty and user hasn't manually typed
@@ -620,7 +636,11 @@ function autoSlug() {
   if (S.slugManual || f.value.trim()!=='') return;
   f.value=document.getElementById('etitle').value.toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').trim().slice(0,60);
 }
-function slugManual() { S.slugManual=true; markDirty(); }
+function slugManual() {
+  S.slugManual=true; markDirty();
+  const slug = document.getElementById('eslug').value.trim();
+  if (slug) { document.getElementById('pub-btn').setAttribute('data-tooltip', ''); }
+}
 
 function scheduleAutoSave() {
   clearTimeout(S.autoTimer);
@@ -803,25 +823,77 @@ function insertImg(input, mode) {
   input.value = '';
 }
 function placeImage(src, mode) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'img-wrapper';
+  wrapper.setAttribute('contenteditable', 'false');
+
   const img = document.createElement('img');
   img.src = src;
-  img.style.cssText = 'max-width:100%;display:block;margin:1em 0;border-radius:3px';
-  img.setAttribute('contenteditable', 'false');
+  img.style.cssText = 'width:100%;border-radius:3px;display:block';
+  img.setAttribute('draggable', 'false');
+
+  const leftHandle = document.createElement('div');
+  leftHandle.className = 'resize-handle left';
+  const rightHandle = document.createElement('div');
+  rightHandle.className = 'resize-handle right';
+
+  wrapper.appendChild(leftHandle);
+  wrapper.appendChild(img);
+  wrapper.appendChild(rightHandle);
+
+  addResizeListeners(wrapper, img, leftHandle, rightHandle);
+
+  wrapper.addEventListener('click', () => {
+    document.querySelectorAll('.img-wrapper.selected').forEach(w => w.classList.remove('selected'));
+    wrapper.classList.add('selected');
+  });
+
   const ed = document.getElementById(mode === 'home' ? 'home-editor' : 'editor');
   ed.focus();
   const sel = window.getSelection();
   if (sel && sel.rangeCount) {
     const r = sel.getRangeAt(0); r.collapse(false);
-    r.insertNode(img);
+    r.insertNode(wrapper);
     const p = document.createElement('p'); p.innerHTML = '<br>';
-    img.parentNode.insertBefore(p, img.nextSibling);
+    wrapper.parentNode.insertBefore(p, wrapper.nextSibling);
     const newRange = document.createRange();
     newRange.setStart(p, 0); newRange.collapse(true);
     sel.removeAllRanges(); sel.addRange(newRange);
   } else {
-    ed.appendChild(img);
+    ed.appendChild(wrapper);
   }
   if (mode === 'home') onHomeEdit(); else onEdit();
+}
+
+function addResizeListeners(wrapper, img, leftHandle, rightHandle) {
+  let startX, startW;
+
+  function onMouseMove(e) {
+    const dx = e.clientX - startX;
+    const editorW = document.getElementById('editor').offsetWidth || document.getElementById('home-editor').offsetWidth;
+    let newW = Math.max(80, Math.min(startW + dx * 2, editorW));
+    img.style.width = newW + 'px';
+    onEdit();
+  }
+
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+
+  [leftHandle, rightHandle].forEach(handle => {
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      startX = e.clientX;
+      startW = img.offsetWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  });
 }
 
 // FORMAT
@@ -922,7 +994,7 @@ async function save(status, auto=false) {
   if (S.publishing) return;
   if (S.mode === 'essay') {
     const slug = document.getElementById('eslug').value.trim();
-    if (!slug) { toast('Add a URL slug before publishing', true); return; }
+    if (!slug) { toast('Add a URL slug before publishing', true); document.getElementById('pub-btn').setAttribute('data-tooltip', 'Add a URL slug to publish'); document.getElementById('pub-btn').disabled = true; return; }
     await saveEssay(status, auto);
   } else if (S.mode === 'home') {
     await saveHome(auto);
@@ -1149,6 +1221,7 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('#slash-menu')) hideSlash();
   if(!e.target.closest('#link-popup')&&!e.target.closest('.tool[onclick*="openLink"]')) closeLink();
   if(!e.target.closest('#video-popup')) closeVideoPopup();
+  if(!e.target.closest('.img-wrapper')) document.querySelectorAll('.img-wrapper.selected').forEach(w=>w.classList.remove('selected'));
 });
 
 window.addEventListener('beforeunload',e=>{if(S.dirty||S.homeDirty){e.preventDefault();e.returnValue='';}});
