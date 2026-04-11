@@ -3,261 +3,405 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>dilina's editor</title>
+<title>Dilina's Editor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #f7f6f3; --sidebar-bg: #efede9; --white: #ffffff; --text: #37352f;
-    --text-muted: #9b9a97; --text-placeholder: #c7c6c3; --border: #e3e2df;
-    --hover: #e8e7e3; --accent: #37352f; --green: #4caf89; --green-light: #f0faf6;
-    --red: #e5534b; --red-light: #fff0ef;
-    --font: 'Lora', 'Lyon Text', Georgia, ui-serif, serif;
-    --sidebar-w: 240px; --radius: 4px;
-  }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; -webkit-font-smoothing: antialiased; }
-  #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-  #login-screen.hidden { display: none; }
-  .login-box { width: 320px; display: flex; flex-direction: column; gap: 18px; }
-  .login-title { font-size: 18px; font-weight: 500; color: var(--text); }
-  .login-sub { font-size: 13px; color: var(--text-muted); margin-top: -10px; }
-  .field-group { display: flex; flex-direction: column; gap: 6px; }
-  .field-label { font-size: 12px; color: var(--text-muted); }
-  .field-input { padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: var(--font); color: var(--text); background: var(--white); outline: none; transition: border-color 0.15s; }
-  .field-input:focus { border-color: var(--accent); }
-  .login-btn { padding: 9px 16px; background: var(--accent); color: white; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: opacity 0.15s; }
-  .login-btn:hover { opacity: 0.8; }
-  .login-error { font-size: 13px; color: var(--red); display: none; }
-  .login-error.show { display: block; }
-  #sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100vh; flex-shrink: 0; }
-  .sidebar-header { padding: 14px 12px 10px; border-bottom: 1px solid var(--border); }
-  .sidebar-brand { font-size: 13px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 6px; }
-  .sidebar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-  .sidebar-user { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .sidebar-section { padding: 8px 6px 4px; }
-  .sidebar-section-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; padding: 0 6px; margin-bottom: 3px; }
-  .sidebar-new-btn { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-muted); border: none; background: none; width: 100%; font-family: var(--font); text-align: left; transition: background 0.1s, color 0.1s; }
-  .sidebar-new-btn:hover { background: var(--hover); color: var(--text); }
-  .essay-list { flex: 1; overflow-y: auto; padding: 3px 6px 8px; }
-  .essay-item { padding: 7px 8px; border-radius: var(--radius); cursor: pointer; margin-bottom: 1px; transition: background 0.1s; }
-  .essay-item:hover, .essay-item.active { background: var(--hover); }
-  .essay-item-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .essay-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .draft-badge { display: inline-block; font-size: 10px; background: #e8e7e3; color: var(--text-muted); padding: 1px 5px; border-radius: 3px; margin-left: 3px; }
-  .live-badge { display: inline-block; font-size: 10px; background: var(--green-light); color: var(--green); padding: 1px 5px; border-radius: 3px; margin-left: 3px; }
-  .sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); }
-  .sidebar-footer span { cursor: pointer; }
-  .sidebar-footer span:hover, .sidebar-footer a:hover { color: var(--text); }
-  .sidebar-footer a { color: var(--text-muted); text-decoration: none; }
-  #main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
-  #topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 48px; border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 12px; }
-  .topbar-status { font-size: 12px; color: var(--text-muted); }
-  .topbar-right { display: flex; align-items: center; gap: 8px; }
-  .btn { padding: 5px 13px; border-radius: var(--radius); font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: var(--font); transition: background 0.1s; white-space: nowrap; }
-  .btn:hover { background: var(--hover); }
-  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-  .btn-primary:hover { opacity: 0.85; background: var(--accent); }
-  .btn-danger { color: var(--red); }
-  .btn-danger:hover { background: var(--red-light); border-color: var(--red); }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  #toolbar { display: flex; align-items: center; gap: 1px; padding: 5px 48px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; background: var(--bg); }
-  .tool { padding: 4px 8px; border-radius: 3px; font-size: 13px; cursor: pointer; border: none; background: none; color: var(--text-muted); font-family: var(--font); transition: background 0.1s, color 0.1s; display: flex; align-items: center; gap: 3px; }
-  .tool:hover { background: var(--hover); color: var(--text); }
-  .tool-sep { width: 1px; height: 16px; background: var(--border); margin: 0 3px; }
-  #meta-bar { padding: 0 48px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .meta-title-input { width: 100%; padding: 18px 0 4px; font-size: 26px; font-weight: 500; font-family: var(--font); border: none; outline: none; color: var(--text); background: transparent; line-height: 1.25; }
-  .meta-title-input::placeholder { color: var(--text-placeholder); }
-  .meta-fields { display: flex; gap: 24px; padding: 8px 0 12px; flex-wrap: wrap; }
-  .meta-field { display: flex; flex-direction: column; gap: 2px; }
-  .meta-field-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
-  .meta-field-input { font-size: 13px; color: var(--text); border: none; outline: none; background: transparent; font-family: var(--font); padding: 0; min-width: 80px; }
-  .meta-field-input::placeholder { color: var(--text-placeholder); }
-  #editor-scroll { flex: 1; overflow-y: auto; }
-  #editor { max-width: 660px; margin: 0 auto; padding: 28px 48px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; }
-  #editor:empty::before { content: 'start writing...'; color: var(--text-placeholder); pointer-events: none; }
-  #editor h1 { font-size: 20px; font-weight: 500; margin: 1.4em 0 0.5em; }
-  #editor h2 { font-size: 16px; font-weight: 500; margin: 1.2em 0 0.4em; }
-  #editor p { margin: 0 0 0.85em; }
-  #editor strong { font-weight: 500; }
-  #editor em { font-style: italic; }
-  #editor a { color: #5b8dd9; }
-  #editor img { max-width: 100%; border-radius: 3px; display: block; margin: 1.25em 0; }
-  #editor blockquote { border-left: 2px solid var(--border); padding-left: 16px; margin: 1em 0; color: var(--text-muted); }
-  #editor ul, #editor ol { padding-left: 22px; margin: 0 0 0.85em; }
-  #editor li { margin-bottom: 0.25em; }
-  #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 40px; }
-  #empty-state h2 { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
-  #empty-state p { font-size: 13px; color: var(--text-muted); }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(55,53,47,0.35); display: flex; align-items: center; justify-content: center; z-index: 500; }
-  .modal-overlay.hidden { display: none; }
-  .modal-box { background: var(--bg); border-radius: 6px; width: 460px; max-width: 95vw; padding: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--border); }
-  .modal-title { font-size: 15px; font-weight: 500; }
-  .modal-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-top: -8px; }
-  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
-  .settings-hint { font-size: 11px; color: var(--text-muted); }
-  .settings-hint a { color: var(--text-muted); }
-  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 9px 18px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 999; white-space: nowrap; }
-  #toast.show { opacity: 1; }
-  #toast.error { background: var(--red); }
-  .spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f6f3;
+  --sidebar-bg: #efede9;
+  --white: #ffffff;
+  --text: #37352f;
+  --text-muted: #9b9a97;
+  --text-placeholder: #c7c6c3;
+  --border: #e3e2df;
+  --hover: #e8e7e3;
+  --accent: #37352f;
+  --blue: #2383e2;
+  --blue-light: #e8f2fd;
+  --green: #4caf89;
+  --green-light: #f0faf6;
+  --red: #e5534b;
+  --red-light: #fff0ef;
+  --font: 'Lora', 'Lyon Text', Georgia, ui-serif, serif;
+  --sidebar-w: 240px;
+  --radius: 4px;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+/* Blue blinking cursor in editors */
+#editor, #home-editor { caret-color: var(--blue); }
+
+/* LOGIN */
+#login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+#login-screen.hidden { display: none; }
+.login-box { width: 320px; display: flex; flex-direction: column; gap: 18px; }
+.login-title { font-size: 18px; font-weight: 500; }
+.login-sub { font-size: 13px; color: var(--text-muted); margin-top: -10px; }
+.field-group { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-size: 12px; color: var(--text-muted); }
+.field-input { padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: var(--font); color: var(--text); background: var(--white); outline: none; transition: border-color 0.15s; }
+.field-input:focus { border-color: var(--accent); }
+.login-btn { padding: 9px 16px; background: var(--accent); color: white; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; font-family: var(--font); }
+.login-btn:hover { opacity: 0.8; }
+.login-error { font-size: 13px; color: var(--red); display: none; }
+.login-error.show { display: block; }
+
+/* SIDEBAR */
+#sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100vh; flex-shrink: 0; transition: transform 0.2s; }
+.sidebar-header { padding: 14px 12px 10px; border-bottom: 1px solid var(--border); }
+.sidebar-brand { font-size: 13px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.sidebar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.sidebar-user { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.sidebar-section { padding: 8px 6px 4px; }
+.sidebar-section-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; padding: 0 6px; margin-bottom: 3px; }
+.sidebar-btn { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-muted); border: none; background: none; width: 100%; font-family: var(--font); text-align: left; transition: background 0.1s, color 0.1s; }
+.sidebar-btn:hover { background: var(--hover); color: var(--text); }
+.sidebar-btn.active { background: var(--hover); color: var(--text); }
+.essay-list { flex: 1; overflow-y: auto; padding: 3px 6px 8px; }
+.essay-item { padding: 7px 8px; border-radius: var(--radius); cursor: pointer; margin-bottom: 1px; transition: background 0.1s; }
+.essay-item:hover, .essay-item.active { background: var(--hover); }
+.essay-item-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.essay-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.draft-badge { display: inline-block; font-size: 10px; background: #e8e7e3; color: var(--text-muted); padding: 1px 5px; border-radius: 3px; margin-left: 3px; }
+.live-badge { display: inline-block; font-size: 10px; background: var(--green-light); color: var(--green); padding: 1px 5px; border-radius: 3px; margin-left: 3px; }
+.sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; }
+.sidebar-footer span, .sidebar-footer a { cursor: pointer; color: var(--text-muted); text-decoration: none; }
+.sidebar-footer span:hover, .sidebar-footer a:hover { color: var(--text); }
+
+/* VERSION HISTORY PANEL */
+#version-panel { position: fixed; left: var(--sidebar-w); top: 0; width: 260px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; transform: translateX(-100%); transition: transform 0.2s; }
+#version-panel.open { transform: translateX(0); }
+.version-panel-header { padding: 14px 12px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.version-panel-title { font-size: 13px; font-weight: 500; }
+.version-panel-close { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; line-height: 1; padding: 2px; }
+.version-panel-close:hover { color: var(--text); }
+.version-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.version-month { font-size: 11px; color: var(--text-muted); font-weight: 600; padding: 8px 12px 4px; }
+.version-item { padding: 8px 12px; cursor: pointer; transition: background 0.1s; border-radius: var(--radius); margin: 0 4px 1px; }
+.version-item:hover { background: var(--hover); }
+.version-item.current { background: var(--hover); }
+.version-item-time { font-size: 12px; color: var(--text); font-weight: 500; }
+.version-item-label { font-size: 11px; color: var(--green); margin-top: 1px; }
+.version-item-author { font-size: 11px; color: var(--text-muted); margin-top: 1px; display: flex; align-items: center; gap: 4px; }
+.version-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+
+/* MAIN */
+#main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); transition: margin-left 0.2s; }
+
+/* TOPBAR */
+#topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 48px; border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 12px; }
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.topbar-status { font-size: 12px; color: var(--text-muted); }
+.topbar-right { display: flex; align-items: center; gap: 6px; }
+.icon-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 5px; border-radius: var(--radius); display: flex; align-items: center; transition: background 0.1s, color 0.1s; }
+.icon-btn:hover { background: var(--hover); color: var(--text); }
+.icon-btn.active { color: var(--blue); }
+.btn { padding: 5px 13px; border-radius: var(--radius); font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: var(--font); transition: background 0.1s; white-space: nowrap; }
+.btn:hover { background: var(--hover); }
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-primary:hover { opacity: 0.85; background: var(--accent); }
+.btn-danger { color: var(--red); }
+.btn-danger:hover { background: var(--red-light); border-color: var(--red); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.topbar-sep { width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
+
+/* TOOLBAR */
+#toolbar { display: flex; align-items: center; gap: 1px; padding: 5px 40px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+.tool { padding: 4px 8px; border-radius: 3px; font-size: 13px; cursor: pointer; border: none; background: none; color: var(--text-muted); font-family: var(--font); transition: background 0.1s, color 0.1s; }
+.tool:hover { background: var(--hover); color: var(--text); }
+.tool-sep { width: 1px; height: 16px; background: var(--border); margin: 0 3px; }
+
+/* META BAR (essays only) */
+#meta-bar { padding: 0 40px; border-bottom: 1px solid var(--border); flex-shrink: 0; max-width: 740px; margin: 0 auto; width: 100%; }
+.meta-title-input { width: 100%; padding: 18px 0 4px; font-size: 26px; font-weight: 500; font-family: var(--font); border: none; outline: none; color: var(--text); background: transparent; line-height: 1.25; caret-color: var(--blue); }
+.meta-title-input::placeholder { color: var(--text-placeholder); }
+.meta-fields { display: flex; gap: 28px; padding: 8px 0 12px; flex-wrap: wrap; }
+.meta-field { display: flex; flex-direction: column; gap: 2px; }
+.meta-field-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+.meta-field-input { font-size: 13px; color: var(--text); border: none; outline: none; background: transparent; font-family: var(--font); padding: 0; min-width: 80px; caret-color: var(--blue); }
+.meta-field-input::placeholder { color: var(--text-placeholder); }
+
+/* EDITOR SCROLL WRAPPER */
+#editor-scroll, #home-scroll { flex: 1; overflow-y: auto; }
+
+/* ESSAY EDITOR */
+#editor { max-width: 660px; margin: 0 auto; padding: 28px 40px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; }
+#editor:empty::before { content: 'Start writing...'; color: var(--text-placeholder); pointer-events: none; }
+
+/* HOME EDITOR */
+#home-scroll { display: none; }
+#home-editor { max-width: 660px; margin: 0 auto; padding: 48px 40px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; }
+#home-editor:empty::before { content: 'Write your home page...'; color: var(--text-placeholder); pointer-events: none; }
+
+/* Shared editor styles */
+#editor h1, #home-editor h1 { font-size: 20px; font-weight: 500; margin: 1.4em 0 0.5em; }
+#editor h2, #home-editor h2 { font-size: 16px; font-weight: 500; margin: 1.2em 0 0.4em; }
+#editor p, #home-editor p { margin: 0 0 0.85em; }
+#editor strong, #home-editor strong { font-weight: 500; }
+#editor em, #home-editor em { font-style: italic; }
+#editor a, #home-editor a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-light); }
+#editor img, #home-editor img { max-width: 100%; border-radius: 3px; display: block; margin: 1.25em 0; }
+#editor blockquote, #home-editor blockquote { border-left: 2px solid var(--border); padding-left: 16px; margin: 1em 0; color: var(--text-muted); }
+#editor ul, #home-editor ul, #editor ol, #home-editor ol { padding-left: 22px; margin: 0 0 0.85em; }
+#editor li, #home-editor li { margin-bottom: 0.25em; }
+
+/* Slash command menu */
+#slash-menu { position: fixed; background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 4px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); z-index: 300; display: none; }
+.slash-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; padding: 4px 8px 2px; font-weight: 600; }
+.slash-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.1s; }
+.slash-item:hover, .slash-item.selected { background: var(--hover); }
+.slash-item-icon { width: 28px; height: 22px; background: var(--border); border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; color: var(--text-muted); }
+.slash-close { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 2px; }
+
+/* Link popup */
+#link-popup { position: fixed; background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 8px; display: none; z-index: 300; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 280px; }
+#link-input { width: 100%; font-family: var(--font); font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; outline: none; color: var(--text); background: var(--bg); caret-color: var(--blue); }
+#link-input:focus { border-color: var(--blue); }
+.link-popup-hint { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+
+/* Restore banner */
+#restore-banner { display: none; background: var(--blue); color: white; text-align: center; padding: 8px 16px; font-size: 13px; flex-shrink: 0; gap: 12px; align-items: center; justify-content: center; }
+#restore-banner.show { display: flex; }
+#restore-banner button { background: white; color: var(--blue); border: none; border-radius: 4px; padding: 4px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font); }
+
+/* Empty state */
+#empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 40px; }
+#empty-state h2 { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+
+/* Modals */
+.modal-overlay { position: fixed; inset: 0; background: rgba(55,53,47,0.35); display: flex; align-items: center; justify-content: center; z-index: 500; }
+.modal-overlay.hidden { display: none; }
+.modal-box { background: var(--bg); border-radius: 6px; width: 460px; max-width: 95vw; padding: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--border); }
+.modal-title { font-size: 15px; font-weight: 500; }
+.modal-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-top: -8px; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
+.settings-hint { font-size: 11px; color: var(--text-muted); }
+.settings-hint a { color: var(--text-muted); }
+
+/* Toast */
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 9px 18px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 999; white-space: nowrap; }
+#toast.show { opacity: 1; }
+#toast.error { background: var(--red); }
+
+.spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 </style>
 </head>
 <body>
+
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
     <div>
-      <div class="login-title">dilina's editor</div>
-      <div class="login-sub" style="margin-top:6px">enter your password to continue</div>
+      <div class="login-title">Dilina's editor</div>
+      <div class="login-sub" style="margin-top:6px">Enter your password to continue</div>
     </div>
     <div class="field-group">
-      <label class="field-label">password</label>
+      <label class="field-label">Password</label>
       <input class="field-input" type="password" id="pw-input" placeholder="••••••••" />
     </div>
-    <div class="login-error" id="login-error">incorrect password</div>
-    <button class="login-btn" onclick="tryLogin()">continue</button>
+    <div class="login-error" id="login-error">Incorrect password</div>
+    <button class="login-btn" onclick="tryLogin()">Continue</button>
   </div>
 </div>
+
+<!-- SETTINGS MODAL -->
 <div id="settings-modal" class="modal-overlay hidden">
   <div class="modal-box">
     <div>
-      <div class="modal-title">github settings</div>
-      <div class="modal-desc">paste your github token and repo details. stored only in your browser.</div>
+      <div class="modal-title">GitHub settings</div>
+      <div class="modal-desc">Paste your GitHub token and repo details. Stored only in your browser.</div>
     </div>
     <div class="field-group">
-      <label class="field-label">github personal access token</label>
+      <label class="field-label">GitHub personal access token</label>
       <input class="field-input" type="password" id="s-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
-      <div class="settings-hint">create at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> — needs repo scope</div>
+      <div class="settings-hint">Create at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> — needs repo scope</div>
     </div>
     <div class="field-group">
-      <label class="field-label">github username</label>
+      <label class="field-label">GitHub username</label>
       <input class="field-input" type="text" id="s-user" placeholder="dave-v0" />
     </div>
     <div class="field-group">
-      <label class="field-label">repository name</label>
+      <label class="field-label">Repository name</label>
       <input class="field-input" type="text" id="s-repo" placeholder="dilinabandara.com" />
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="closeSettings()">cancel</button>
-      <button class="btn btn-primary" onclick="saveSettings()">save</button>
+      <button class="btn" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
     </div>
   </div>
 </div>
+
+<!-- CONFIRM DELETE -->
 <div id="confirm-modal" class="modal-overlay hidden">
   <div class="modal-box" style="width:340px">
     <div>
-      <div class="modal-title">delete this essay?</div>
-      <div class="modal-desc">removes it from github and your live site. cannot be undone.</div>
+      <div class="modal-title">Delete this essay?</div>
+      <div class="modal-desc">Removes it from GitHub and your live site. Cannot be undone.</div>
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="document.getElementById('confirm-modal').classList.add('hidden')">cancel</button>
-      <button class="btn btn-danger" onclick="confirmDelete()">delete</button>
+      <button class="btn" onclick="document.getElementById('confirm-modal').classList.add('hidden')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
     </div>
   </div>
 </div>
+
+<!-- SLASH COMMAND MENU -->
+<div id="slash-menu">
+  <div class="slash-label">Filtered results</div>
+  <div class="slash-item selected" onclick="slashInsertImage()">
+    <div class="slash-item-icon">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.1"/><circle cx="4.5" cy="5.5" r="1" fill="currentColor"/><path d="M1 9.5l3-3 2.5 2.5 2-2 3.5 3.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    Image
+  </div>
+  <div class="slash-close"><span>Close menu</span><span>esc</span></div>
+</div>
+
+<!-- LINK POPUP -->
+<div id="link-popup">
+  <input id="link-input" type="url" placeholder="Paste or type a URL..." />
+  <div class="link-popup-hint">Press Enter to confirm · Esc to cancel</div>
+</div>
+
+<!-- VERSION PANEL -->
+<div id="version-panel">
+  <div class="version-panel-header">
+    <span class="version-panel-title">Version history</span>
+    <button class="version-panel-close" onclick="closeVersionPanel()">✕</button>
+  </div>
+  <div class="version-list" id="version-list"></div>
+</div>
+
+<!-- SIDEBAR -->
 <div id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-brand"><span class="sidebar-dot"></span>dilina's editor</div>
-    <div class="sidebar-user" id="sidebar-user">not connected</div>
+    <div class="sidebar-brand"><span class="sidebar-dot"></span>Dilina's editor</div>
+    <div class="sidebar-user" id="sidebar-user">Not connected</div>
   </div>
   <div class="sidebar-section">
-    <div class="sidebar-section-label">pages</div>
-    <button class="sidebar-nav-btn" id="home-nav-btn" onclick="showHomeEditor()">
+    <div class="sidebar-section-label">Pages</div>
+    <button class="sidebar-btn" id="home-nav-btn" onclick="openHomePage()">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 5.5L6.5 1.5L11.5 5.5V11.5H8.5V8.5H4.5V11.5H1.5V5.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-      home page
+      Home page
     </button>
   </div>
   <div class="sidebar-section">
-    <div class="sidebar-section-label">essays</div>
-    <button class="sidebar-new-btn" onclick="newEssay()">
+    <div class="sidebar-section-label">Essays</div>
+    <button class="sidebar-btn" onclick="newEssay()">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5v10M1.5 6.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      new essay
+      New essay
     </button>
   </div>
   <div class="essay-list" id="essay-list"></div>
   <div class="sidebar-footer">
-    <span onclick="openSettings()">⚙ settings</span> · <a href="https://dilinabandara.com" target="_blank">view site ↗</a>
+    <span onclick="openSettings()">⚙ Settings</span>
+    <a href="https://dilinabandara.com" target="_blank">View site ↗</a>
   </div>
 </div>
+
+<!-- MAIN -->
 <div id="main">
+  <!-- RESTORE BANNER -->
+  <div id="restore-banner">
+    <span id="restore-label">Viewing version from Oct 11, 2:12 PM</span>
+    <button onclick="restoreVersion()">Restore this version</button>
+    <button onclick="closeRestoreBanner()" style="background:transparent;color:rgba(255,255,255,0.7);border:none;cursor:pointer;font-family:var(--font);font-size:13px">Cancel</button>
+  </div>
+
   <div id="topbar">
-    <span class="topbar-status" id="save-status">no changes</span>
+    <div class="topbar-left">
+      <span class="topbar-status" id="save-status">No changes</span>
+    </div>
     <div class="topbar-right">
-      <button class="btn btn-danger" id="delete-btn" onclick="deleteEssay()" style="display:none">delete</button>
-      <button class="btn" id="draft-btn" onclick="saveToGithub('draft')" style="display:none">save draft</button>
-      <button class="btn btn-primary" id="publish-btn" onclick="saveToGithub('published')" style="display:none">publish →</button>
-      <button class="btn btn-primary" id="home-publish-btn" onclick="publishHomePage()" style="display:none">publish home →</button>
+      <button class="icon-btn" id="history-btn" onclick="toggleVersionPanel()" title="Version history">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 4.5V8l2.5 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 8H1M8 1V3" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/></svg>
+      </button>
+      <div class="topbar-sep"></div>
+      <button class="btn btn-danger" id="delete-btn" onclick="deleteEssay()" style="display:none">Delete</button>
+      <button class="btn" id="draft-btn" onclick="saveDoc('draft')" style="display:none">Save draft</button>
+      <button class="btn btn-primary" id="publish-btn" onclick="saveDoc('published')" style="display:none">Publish →</button>
     </div>
   </div>
-  <div id="empty-state">
-    <h2>nothing open</h2>
-    <p>pick an essay from the sidebar or start a new one.</p>
+
+  <div id="toolbar" style="display:none">
+    <button class="tool" onclick="fmt('bold')" title="Cmd+B"><strong>B</strong></button>
+    <button class="tool" onclick="fmt('italic')" title="Cmd+I"><em>I</em></button>
+    <div class="tool-sep"></div>
+    <button class="tool" onclick="fmtBlock('h1')">H1</button>
+    <button class="tool" onclick="fmtBlock('h2')">H2</button>
+    <button class="tool" onclick="fmtBlock('p')">¶</button>
+    <div class="tool-sep"></div>
+    <button class="tool" onclick="openLinkPopup()" title="Cmd+K">Link</button>
+    <button class="tool" onclick="triggerImg()">Image</button>
+    <div class="tool-sep"></div>
+    <button class="tool" onclick="fmt('insertUnorderedList')">• List</button>
+    <button class="tool" onclick="fmtBlock('blockquote')">" Quote</button>
   </div>
-  <div id="editor-pane" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div id="toolbar">
-      <button class="tool" onclick="fmt('bold')"><strong>B</strong></button>
-      <button class="tool" onclick="fmt('italic')"><em>I</em></button>
-      <div class="tool-sep"></div>
-      <button class="tool" onclick="fmtBlock('h1')">H1</button>
-      <button class="tool" onclick="fmtBlock('h2')">H2</button>
-      <button class="tool" onclick="fmtBlock('p')">¶</button>
-      <div class="tool-sep"></div>
-      <button class="tool" onclick="insertLink()">link</button>
-      <button class="tool" onclick="triggerImg()">image</button>
-      <div class="tool-sep"></div>
-      <button class="tool" onclick="fmt('insertUnorderedList')">• list</button>
-      <button class="tool" onclick="fmtBlock('blockquote')">" quote</button>
-    </div>
+
+  <!-- Meta bar — essays only -->
+  <div id="meta-bar-wrap" style="display:none; border-bottom:1px solid var(--border); flex-shrink:0;">
     <div id="meta-bar">
-      <input class="meta-title-input" id="essay-title" placeholder="untitled essay" oninput="markDirty()" />
+      <input class="meta-title-input" id="essay-title" placeholder="Untitled essay" oninput="markDirty()" />
       <div class="meta-fields">
         <div class="meta-field">
-          <div class="meta-field-label">date</div>
-          <input class="meta-field-input" id="essay-date" placeholder="april 2026" oninput="markDirty()" />
+          <div class="meta-field-label">Date</div>
+          <input class="meta-field-input" id="essay-date" placeholder="April 2026" oninput="markDirty()" />
         </div>
         <div class="meta-field">
-          <div class="meta-field-label">url slug</div>
+          <div class="meta-field-label">URL Slug</div>
           <input class="meta-field-input" id="essay-slug" placeholder="my-essay" oninput="onSlugInput()" />
         </div>
         <div class="meta-field">
-          <div class="meta-field-label">read time</div>
+          <div class="meta-field-label">Read time</div>
           <input class="meta-field-input" id="essay-readtime" placeholder="5 min" oninput="markDirty()" />
         </div>
       </div>
     </div>
-    <div id="editor-scroll">
-      <div id="editor" contenteditable="true" spellcheck="true" oninput="markDirty()"></div>
-    </div>
+  </div>
+
+  <div id="empty-state">
+    <h2>Nothing open</h2>
+    <p>Edit your home page or start a new essay.</p>
+  </div>
+
+  <div id="editor-scroll" style="display:none">
+    <div id="editor" contenteditable="true" spellcheck="true" oninput="onEditorInput()"></div>
+  </div>
+
+  <div id="home-scroll">
+    <div id="home-editor" contenteditable="true" spellcheck="true" oninput="onHomeInput()"></div>
   </div>
 </div>
-<div id="home-pane" style="display:none;flex:1;overflow-y:auto">
-  <div style="max-width:660px;margin:0 auto;padding:32px 48px 120px">
-    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">bio</div>
-    <textarea id="home-bio" style="width:100%;min-height:160px;font-family:var(--font);font-size:15px;line-height:1.85;color:var(--text);background:transparent;border:none;outline:none;resize:none;padding:0" placeholder="write your bio here, one line per paragraph..." oninput="markHomeDirty()"></textarea>
-    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin:32px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)">photo</div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <img id="home-photo-preview" src="" alt="" style="width:80px;height:54px;border-radius:3px;object-fit:cover;display:none;border:1px solid var(--border)" />
-      <button onclick="document.getElementById('home-img-input').click()" style="font-size:13px;color:var(--text-muted);cursor:pointer;padding:5px 10px;border:1px dashed var(--border);border-radius:4px;background:none;font-family:var(--font)">+ upload photo</button>
-      <span id="home-photo-name" style="font-size:12px;color:var(--text-muted)"></span>
-    </div>
-    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin:32px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)">previous work</div>
-    <div id="prev-work-list" style="margin-bottom:12px"></div>
-    <button onclick="addWorkItem()" style="font-size:13px;color:var(--text-muted);cursor:pointer;background:none;border:none;font-family:var(--font);padding:0">+ add project</button>
-  </div>
-</div>
+
 <div id="toast"></div>
-<input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImg(this)" />
-<input type="file" id="home-img-input" accept="image/*" style="display:none" onchange="handleHomePhoto(this)" />
+<input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImg(this,'essay')" />
+<input type="file" id="home-img-input" accept="image/*" style="display:none" onchange="handleImg(this,'home')" />
+
 <script>
 const PASSWORD = 'dilina2026';
 const WRITING_PATH = 'writing';
-let state = { essays:[], currentId:null, dirty:false, publishing:false, pendingDelete:null, mode:'empty', homePhoto:null, homeSha:null, homeDirty:false, prevWork:[] };
+
+let state = {
+  essays: [], currentId: null, dirty: false, homeDirty: false,
+  publishing: false, pendingDelete: null,
+  mode: 'empty', // 'empty' | 'essay' | 'home'
+  homeSha: null,
+  versions: [], // { timestamp, label, sha, content }
+  viewingVersion: null, // index into versions
+  autoSaveTimer: null,
+};
+
+// ── AUTH ──
 function gh() { return { token: localStorage.getItem('gh_token')||'', user: localStorage.getItem('gh_user')||'', repo: localStorage.getItem('gh_repo')||'' }; }
+
 function tryLogin() {
   if (document.getElementById('pw-input').value === PASSWORD) {
     document.getElementById('login-screen').classList.add('hidden'); init();
@@ -267,178 +411,470 @@ function tryLogin() {
   }
 }
 document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key==='Enter') tryLogin(); });
+
 function init() {
   const g = gh();
   if (!g.token||!g.user||!g.repo) { openSettings(); return; }
   document.getElementById('sidebar-user').textContent = g.user+'/'+g.repo;
-  loadEssays();
-  loadHomePage();
+  loadEssays(); loadHomePage();
 }
+
 function openSettings() { const g=gh(); document.getElementById('s-token').value=g.token; document.getElementById('s-user').value=g.user; document.getElementById('s-repo').value=g.repo; document.getElementById('settings-modal').classList.remove('hidden'); }
 function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
-function saveSettings() { localStorage.setItem('gh_token',document.getElementById('s-token').value.trim()); localStorage.setItem('gh_user',document.getElementById('s-user').value.trim()); localStorage.setItem('gh_repo',document.getElementById('s-repo').value.trim()); closeSettings(); document.getElementById('sidebar-user').textContent=gh().user+'/'+gh().repo; loadEssays(); toast('settings saved'); }
-async function ghApi(path,method='GET',body=null) {
-  const g=gh();
-  const res=await fetch(`https://api.github.com/repos/${g.user}/${g.repo}/${path}`,{ method, headers:{'Authorization':`token ${g.token}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'}, body:body?JSON.stringify(body):null });
-  if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.message||`github error ${res.status}`); }
+function saveSettings() {
+  localStorage.setItem('gh_token', document.getElementById('s-token').value.trim());
+  localStorage.setItem('gh_user', document.getElementById('s-user').value.trim());
+  localStorage.setItem('gh_repo', document.getElementById('s-repo').value.trim());
+  closeSettings(); document.getElementById('sidebar-user').textContent = gh().user+'/'+gh().repo;
+  loadEssays(); loadHomePage(); toast('Settings saved');
+}
+
+// ── GITHUB API ──
+async function ghApi(path, method='GET', body=null) {
+  const g = gh();
+  const res = await fetch(`https://api.github.com/repos/${g.user}/${g.repo}/${path}`, {
+    method, headers: { 'Authorization':`token ${g.token}`, 'Content-Type':'application/json', 'Accept':'application/vnd.github.v3+json' },
+    body: body ? JSON.stringify(body) : null,
+  });
+  if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.message||`GitHub error ${res.status}`); }
   return res.json();
 }
+
+// ── ESSAYS ──
 async function loadEssays() {
-  document.getElementById('essay-list').innerHTML='<div style="padding:8px;font-size:12px;color:var(--text-muted)">loading...</div>';
+  document.getElementById('essay-list').innerHTML = '<div style="padding:8px;font-size:12px;color:var(--text-muted)">Loading...</div>';
   try {
-    const files=await ghApi(`contents/${WRITING_PATH}`);
-    const htmlFiles=files.filter(f=>f.name.endsWith('.html')&&f.name!=='index.html');
-    const essays=[];
-    for (const f of htmlFiles) { const c=await ghApi(`contents/${WRITING_PATH}/${f.name}`); const html=decodeURIComponent(escape(atob(c.content.replace(/\n/g,'')))); essays.push({...parseMeta(html,f.name),sha:c.sha}); }
-    state.essays=essays; renderSidebar();
-  } catch(e) { document.getElementById('essay-list').innerHTML='<div style="padding:8px;font-size:12px;color:var(--text-muted)">check settings ↗</div>'; }
+    const files = await ghApi(`contents/${WRITING_PATH}`);
+    const htmlFiles = files.filter(f => f.name.endsWith('.html') && f.name !== 'index.html');
+    const essays = [];
+    for (const f of htmlFiles) {
+      const c = await ghApi(`contents/${WRITING_PATH}/${f.name}`);
+      const html = decodeURIComponent(escape(atob(c.content.replace(/\n/g,''))));
+      essays.push({ ...parseMeta(html, f.name), sha: c.sha });
+    }
+    state.essays = essays; renderSidebar();
+  } catch(e) {
+    document.getElementById('essay-list').innerHTML = '<div style="padding:8px;font-size:12px;color:var(--text-muted)">Check settings ↗</div>';
+  }
 }
-function parseMeta(html,filename) {
-  const doc=new DOMParser().parseFromString(html,'text/html'); const slug=filename.replace('.html','');
-  return { id:slug, slug, title:doc.querySelector('meta[name="essay-title"]')?.content||'untitled', date:doc.querySelector('meta[name="essay-date"]')?.content||'', readtime:doc.querySelector('meta[name="essay-readtime"]')?.content||'', status:doc.querySelector('meta[name="essay-status"]')?.content||'published', body:doc.querySelector('.essay-body')?.innerHTML||'' };
+
+function parseMeta(html, filename) {
+  const doc = new DOMParser().parseFromString(html, 'text/html'); const slug = filename.replace('.html','');
+  return { id:slug, slug, title:doc.querySelector('meta[name="essay-title"]')?.content||'Untitled', date:doc.querySelector('meta[name="essay-date"]')?.content||'', readtime:doc.querySelector('meta[name="essay-readtime"]')?.content||'', status:doc.querySelector('meta[name="essay-status"]')?.content||'published', body:doc.querySelector('.essay-body')?.innerHTML||'' };
 }
+
 function renderSidebar() {
-  const list=document.getElementById('essay-list');
-  if (!state.essays.length) { list.innerHTML='<div style="padding:8px;font-size:12px;color:var(--text-muted)">no essays yet</div>'; return; }
-  list.innerHTML=state.essays.map(e=>`<div class="essay-item ${e.id===state.currentId?'active':''}" onclick="selectEssay('${e.id}')"><div class="essay-item-title">${e.title||'untitled'}<span class="${e.status==='draft'?'draft-badge':'live-badge'}">${e.status==='draft'?'draft':'live'}</span></div><div class="essay-item-meta">${e.date||'no date'}</div></div>`).join('');
+  const list = document.getElementById('essay-list');
+  if (!state.essays.length) { list.innerHTML = '<div style="padding:8px;font-size:12px;color:var(--text-muted)">No essays yet</div>'; return; }
+  list.innerHTML = state.essays.map(e => `
+    <div class="essay-item ${e.id===state.currentId?'active':''}" onclick="selectEssay('${e.id}')">
+      <div class="essay-item-title">${e.title||'Untitled'}<span class="${e.status==='draft'?'draft-badge':'live-badge'}">${e.status==='draft'?'Draft':'Live'}</span></div>
+      <div class="essay-item-meta">${e.date||'No date'}</div>
+    </div>`).join('');
 }
+
 function selectEssay(id) {
-  if (state.dirty&&!confirm('unsaved changes. switch anyway?')) return;
-  state.currentId=id; const e=state.essays.find(x=>x.id===id); if (!e) return;
-  document.getElementById('essay-title').value=e.title||''; document.getElementById('essay-date').value=e.date||''; document.getElementById('essay-slug').value=e.slug||''; document.getElementById('essay-readtime').value=e.readtime||''; document.getElementById('editor').innerHTML=e.body||'';
-  showPane(); state.dirty=false; updateStatus('saved'); renderSidebar();
+  if ((state.dirty||state.homeDirty) && !confirm('Unsaved changes. Switch anyway?')) return;
+  state.currentId = id; state.mode = 'essay';
+  const e = state.essays.find(x => x.id===id); if (!e) return;
+  document.getElementById('essay-title').value = e.title||'';
+  document.getElementById('essay-date').value = e.date||'';
+  document.getElementById('essay-slug').value = e.slug||'';
+  document.getElementById('essay-readtime').value = e.readtime||'';
+  document.getElementById('editor').innerHTML = e.body||'';
+  showEssayPane(); state.dirty=false; updateStatus('Saved'); renderSidebar();
+  document.getElementById('home-nav-btn').classList.remove('active');
+  loadVersionHistory(id);
 }
+
 function newEssay() {
-  const id='draft-'+Date.now(); state.essays.unshift({id,slug:'',title:'',date:'',readtime:'',body:'',status:'draft',sha:null}); state.currentId=id;
-  document.getElementById('essay-title').value=''; document.getElementById('essay-date').value=''; document.getElementById('essay-slug').value=''; document.getElementById('essay-readtime').value=''; document.getElementById('editor').innerHTML='';
-  showPane(); renderSidebar(); document.getElementById('essay-title').focus(); state.dirty=false; updateStatus('new essay');
+  if ((state.dirty||state.homeDirty) && !confirm('Unsaved changes. Continue?')) return;
+  const id = 'draft-'+Date.now();
+  state.essays.unshift({id, slug:'', title:'', date:'', readtime:'', body:'', status:'draft', sha:null});
+  state.currentId = id; state.mode = 'essay';
+  ['essay-title','essay-date','essay-slug','essay-readtime'].forEach(x => document.getElementById(x).value='');
+  document.getElementById('editor').innerHTML = '';
+  showEssayPane(); renderSidebar(); document.getElementById('essay-title').focus();
+  state.dirty=false; updateStatus('New essay');
+  document.getElementById('home-nav-btn').classList.remove('active');
+  state.versions = []; renderVersionList();
 }
-function showPane() { document.getElementById('empty-state').style.display='none'; document.getElementById('editor-pane').style.display='flex'; ['draft-btn','publish-btn','delete-btn'].forEach(id=>document.getElementById(id).style.display=''); }
-function markDirty() { state.dirty=true; updateStatus('unsaved changes'); autoSlug(); }
-function updateStatus(msg) { document.getElementById('save-status').textContent=msg; }
-function autoSlug() { const sf=document.getElementById('essay-slug'); if (sf.dataset.manual) return; sf.value=document.getElementById('essay-title').value.toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').trim().slice(0,60); }
-function onSlugInput() { document.getElementById('essay-slug').dataset.manual='true'; markDirty(); }
-function currentData() { return { title:document.getElementById('essay-title').value||'untitled', date:document.getElementById('essay-date').value||'', slug:document.getElementById('essay-slug').value||('essay-'+Date.now()), readtime:document.getElementById('essay-readtime').value||'', body:document.getElementById('editor').innerHTML }; }
-function buildEssayHtml(data,status) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="essay-title" content="${esc(data.title)}"><meta name="essay-date" content="${esc(data.date)}"><meta name="essay-readtime" content="${esc(data.readtime)}"><meta name="essay-status" content="${status}"><title>${esc(data.title)} — dilina bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;font-weight:400;-webkit-font-smoothing:antialiased}.site{max-width:620px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:2.5rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover{color:#37352f}.back{font-size:13px;color:#9b9a97;text-decoration:none;display:inline-block;margin-bottom:2rem}.back:hover{color:#37352f}.essay-title-h{font-size:26px;font-weight:500;line-height:1.25;margin-bottom:8px;letter-spacing:-0.3px}.essay-meta{font-size:13px;color:#9b9a97;margin-bottom:2rem}hr{border:none;border-top:1px solid #e3e2df;margin:0 0 2rem}.essay-body{font-size:15px;line-height:1.85;color:#37352f}.essay-body p{margin:0 0 1em}.essay-body h1{font-size:20px;font-weight:500;margin:1.4em 0 0.5em}.essay-body h2{font-size:16px;font-weight:500;margin:1.2em 0 0.4em}.essay-body img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.essay-body strong{font-weight:500}.essay-body em{font-style:italic}.essay-body a{color:#5b8dd9}.essay-body blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0}.essay-body ul,.essay-body ol{padding-left:22px;margin:0 0 1em}.essay-body li{margin-bottom:0.25em}</style></head><body><div class="site"><nav><a href="/">dilina</a><a href="/writing">writing</a></nav><a class="back" href="/writing">← back</a><h1 class="essay-title-h">${esc(data.title)}</h1><div class="essay-meta">${esc(data.date)}${data.readtime?' · '+esc(data.readtime)+' read':''}</div><hr><div class="essay-body">${data.body}</div></div></body></html>`;
+
+function showEssayPane() {
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('home-scroll').style.display = 'none';
+  document.getElementById('editor-scroll').style.display = 'block';
+  document.getElementById('toolbar').style.display = 'flex';
+  document.getElementById('meta-bar-wrap').style.display = 'block';
+  document.getElementById('draft-btn').style.display = '';
+  document.getElementById('publish-btn').style.display = '';
+  document.getElementById('delete-btn').style.display = '';
 }
-function buildIndexHtml(essays) {
-  const published=essays.filter(e=>e.status!=='draft'); const byYear={};
-  published.forEach(e=>{ const y=(e.date||'').split(' ').pop()||'undated'; if (!byYear[y]) byYear[y]=[]; byYear[y].push(e); });
-  const years=Object.keys(byYear).sort((a,b)=>b-a);
-  const rows=years.map(y=>`<p style="font-size:13px;color:#9b9a97;margin:0 0 6px">${y}</p><ul style="list-style:none;padding:0;margin:0 0 2.5rem">${byYear[y].map(e=>`<li style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #e3e2df"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="flex-shrink:0;margin-top:3px;opacity:0.3"><rect x="2" y="1" width="9" height="12" rx="1" stroke="#37352f" stroke-width="1.1"/><path d="M4 5h5M4 7.5h5M4 10h3" stroke="#37352f" stroke-width="0.9" stroke-linecap="round"/></svg><div><a href="/writing/${e.slug}" style="font-size:14px;color:#37352f;text-decoration:none;display:block;line-height:1.5">${esc(e.title)}</a><div style="font-size:12px;color:#9b9a97;margin-top:2px">${esc(e.date)}${e.readtime?' · '+esc(e.readtime):''}</div></div></li>`).join('')}</ul>`).join('');
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>writing — dilina bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;font-weight:400;-webkit-font-smoothing:antialiased}.site{max-width:620px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:3rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover,nav a.active{color:#37352f}h1{font-size:20px;font-weight:500;margin:0 0 2rem}ul li:first-child{border-top:1px solid #e3e2df}</style></head><body><div class="site"><nav><a href="/">dilina</a><a href="/writing" class="active">writing</a></nav><h1>writing</h1>${rows||'<p style="font-size:14px;color:#9b9a97">no essays yet.</p>'}</div></body></html>`;
-}
-function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-async function saveToGithub(status) {
-  if (state.publishing) return;
-  const data=currentData(); if (!data.slug) { toast('add a url slug first',true); return; }
-  const g=gh(); if (!g.token) { openSettings(); return; }
-  state.publishing=true; const btnId=status==='draft'?'draft-btn':'publish-btn'; const btn=document.getElementById(btnId); const orig=btn.innerHTML;
-  btn.innerHTML='<span class="spinner"></span>'; btn.disabled=true;
-  try {
-    const html=buildEssayHtml(data,status); const encoded=btoa(unescape(encodeURIComponent(html))); const path=`${WRITING_PATH}/${data.slug}.html`;
-    let sha=null; try { const ex=await ghApi(`contents/${path}`); sha=ex.sha; } catch(e) {}
-    const essay=state.essays.find(e=>e.id===state.currentId);
-    if (essay?.sha&&essay.slug&&essay.slug!==data.slug) { try { await ghApi(`contents/${WRITING_PATH}/${essay.slug}.html`,'DELETE',{message:`remove: ${essay.slug}`,sha:essay.sha}); } catch(e) {} }
-    const result=await ghApi(`contents/${path}`,'PUT',{message:`${status==='draft'?'draft':'publish'}: ${data.title}`,content:encoded,sha:sha||undefined});
-    const updated={...data,id:data.slug,status,sha:result.content?.sha||null};
-    const idx=state.essays.findIndex(e=>e.id===state.currentId); if (idx>=0) state.essays[idx]=updated; else state.essays.unshift(updated);
-    state.currentId=data.slug; await updateIndex(); renderSidebar(); state.dirty=false; updateStatus('saved'); toast(status==='draft'?'draft saved':'published!');
-  } catch(e) { toast('error: '+e.message,true); }
-  finally { state.publishing=false; btn.innerHTML=orig; btn.disabled=false; }
-}
-async function updateIndex() {
-  const html=buildIndexHtml(state.essays); const encoded=btoa(unescape(encodeURIComponent(html))); const path=`${WRITING_PATH}/index.html`;
-  let sha=null; try { const ex=await ghApi(`contents/${path}`); sha=ex.sha; } catch(e) {}
-  await ghApi(`contents/${path}`,'PUT',{message:'update writing index',content:encoded,sha:sha||undefined});
-}
-function deleteEssay() { if (!state.currentId) return; state.pendingDelete=state.currentId; document.getElementById('confirm-modal').classList.remove('hidden'); }
-async function confirmDelete() {
-  document.getElementById('confirm-modal').classList.add('hidden'); const essay=state.essays.find(e=>e.id===state.pendingDelete); if (!essay) return;
-  try {
-    if (essay.sha&&essay.slug) { await ghApi(`contents/${WRITING_PATH}/${essay.slug}.html`,'DELETE',{message:`delete: ${essay.slug}`,sha:essay.sha}); }
-    state.essays=state.essays.filter(e=>e.id!==state.pendingDelete); state.currentId=null; state.dirty=false; await updateIndex(); renderSidebar();
-    document.getElementById('empty-state').style.display=''; document.getElementById('editor-pane').style.display='none';
-    ['draft-btn','publish-btn','delete-btn'].forEach(id=>document.getElementById(id).style.display='none'); updateStatus('no changes'); toast('deleted');
-  } catch(e) { toast('error: '+e.message,true); }
-}
-function fmt(cmd) { document.execCommand(cmd,false,null); document.getElementById('editor').focus(); markDirty(); }
-function fmtBlock(tag) { document.execCommand('formatBlock',false,tag); document.getElementById('editor').focus(); markDirty(); }
-function insertLink() { const u=prompt('url:'); if (u) { document.execCommand('createLink',false,u); markDirty(); } }
-function triggerImg() { document.getElementById('img-input').click(); }
-function handleImg(input) {
-  const file=input.files[0]; if (!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{ const img=document.createElement('img'); img.src=e.target.result; img.style.maxWidth='100%'; const editor=document.getElementById('editor'); editor.focus(); const sel=window.getSelection(); if (sel.rangeCount) { const r=sel.getRangeAt(0); r.insertNode(img); r.collapse(false); } else editor.appendChild(img); markDirty(); };
-  reader.readAsDataURL(file); input.value='';
-}
-let toastTimer;
-function toast(msg,err=false) { const el=document.getElementById('toast'); el.textContent=msg; el.className='show'+(err?' error':''); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='',2800); }
-document.addEventListener('keydown',e=>{ if ((e.metaKey||e.ctrlKey)&&e.key==='s') { e.preventDefault(); if(state.currentId) saveToGithub('draft'); } if ((e.metaKey||e.ctrlKey)&&e.key==='Enter') { e.preventDefault(); if(state.currentId) saveToGithub('published'); } });
-window.addEventListener('beforeunload',e=>{ if(state.dirty){e.preventDefault();e.returnValue='';} });
-function showHomeEditor() {
-  if (state.dirty&&!confirm('unsaved changes. switch anyway?')) return;
-  state.mode='home'; state.currentId=null;
-  document.getElementById('empty-state').style.display='none';
-  document.getElementById('editor-pane').style.display='none';
-  document.getElementById('home-pane').style.display='block';
-  document.getElementById('draft-btn').style.display='none';
-  document.getElementById('publish-btn').style.display='none';
-  document.getElementById('delete-btn').style.display='none';
-  document.getElementById('home-publish-btn').style.display='';
-  document.getElementById('home-nav-btn').classList.add('active');
-  renderSidebar(); updateStatus('home page');
-}
-function markHomeDirty() { state.homeDirty=true; updateStatus('unsaved changes'); }
+
+// ── HOME PAGE ──
 async function loadHomePage() {
   try {
-    const c=await ghApi('contents/index.html');
-    const html=decodeURIComponent(escape(atob(c.content.replace(/\n/g,''))));
-    state.homeSha=c.sha; parseHomePage(html);
+    const c = await ghApi('contents/index.html');
+    const html = decodeURIComponent(escape(atob(c.content.replace(/\n/g,''))));
+    state.homeSha = c.sha;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const content = doc.querySelector('.content');
+    if (content) document.getElementById('home-editor').innerHTML = content.innerHTML;
   } catch(e) {}
 }
-function parseHomePage(html) {
-  const doc=new DOMParser().parseFromString(html,'text/html');
-  const paras=doc.querySelectorAll('.content p'); const lines=[];
-  paras.forEach(p=>{ const c=p.cloneNode(true); c.querySelectorAll('a').forEach(a=>a.replaceWith(a.textContent)); lines.push(c.textContent.trim()); });
-  document.getElementById('home-bio').value=lines.join('\n');
-  const img=doc.querySelector('.photo img');
-  if (img) { const src=img.getAttribute('src'); if(src&&src!=='/images/desk.jpg'){state.homePhoto=src;const preview=document.getElementById('home-photo-preview');preview.src=src;preview.style.display='block';} }
-  state.prevWork=[];
-  doc.querySelectorAll('.prev-item').forEach(item=>{ const a=item.querySelector('a'); const span=item.querySelector('span'); state.prevWork.push({name:a?.textContent?.trim()||'',url:a?.getAttribute('href')||'#',desc:(span?.textContent?.trim()||'').replace(/^—\s*/,'')}); });
-  renderPrevWork();
+
+function openHomePage() {
+  if ((state.dirty||state.homeDirty) && !confirm('Unsaved changes. Switch anyway?')) return;
+  state.mode = 'home'; state.currentId = null;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('editor-scroll').style.display = 'none';
+  document.getElementById('home-scroll').style.display = 'block';
+  document.getElementById('toolbar').style.display = 'flex';
+  document.getElementById('meta-bar-wrap').style.display = 'none';
+  document.getElementById('draft-btn').style.display = 'none';
+  document.getElementById('publish-btn').style.display = '';
+  document.getElementById('delete-btn').style.display = 'none';
+  document.getElementById('home-nav-btn').classList.add('active');
+  document.getElementById('publish-btn').textContent = 'Publish home →';
+  renderSidebar(); updateStatus('Home page');
+  state.versions = []; renderVersionList();
 }
-function renderPrevWork() {
-  document.getElementById('prev-work-list').innerHTML=(state.prevWork||[]).map((w,i)=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input style="font-family:var(--font);font-size:13px;color:var(--text);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;padding:3px 0;width:110px" value="${esc(w.name)}" placeholder="project name" oninput="updateWork(${i},'name',this.value)" /><input style="font-family:var(--font);font-size:13px;color:var(--text-muted);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;padding:3px 0;width:130px" value="${esc(w.url==='#'?'':w.url)}" placeholder="url (optional)" oninput="updateWork(${i},'url',this.value)" /><input style="font-family:var(--font);font-size:13px;color:var(--text);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;padding:3px 0;flex:1" value="${esc(w.desc)}" placeholder="short description" oninput="updateWork(${i},'desc',this.value)" /><button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 4px" onclick="removeWork(${i})">×</button></div>`).join('');
+
+// ── INPUT HANDLERS ──
+function onEditorInput() { markDirty(); autoSlug(); handleSlashCommand('essay'); scheduleAutoSave(); }
+function onHomeInput() { state.homeDirty=true; updateStatus('Unsaved changes'); handleSlashCommand('home'); scheduleAutoSave(); }
+function markDirty() { state.dirty=true; updateStatus('Unsaved changes'); }
+function updateStatus(msg) { document.getElementById('save-status').textContent = msg; }
+
+function autoSlug() {
+  const sf = document.getElementById('essay-slug'); if (sf.dataset.manual) return;
+  sf.value = document.getElementById('essay-title').value.toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').trim().slice(0,60);
 }
-function updateWork(i,k,v) { state.prevWork[i][k]=v; markHomeDirty(); }
-function removeWork(i) { state.prevWork.splice(i,1); renderPrevWork(); markHomeDirty(); }
-function addWorkItem() { state.prevWork.push({name:'',url:'',desc:''}); renderPrevWork(); markHomeDirty(); }
-function handleHomePhoto(input) {
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{ state.homePhoto=e.target.result; const preview=document.getElementById('home-photo-preview'); preview.src=state.homePhoto; preview.style.display='block'; document.getElementById('home-photo-name').textContent=file.name; markHomeDirty(); };
+function onSlugInput() { document.getElementById('essay-slug').dataset.manual='true'; markDirty(); }
+
+// ── AUTO SAVE ──
+function scheduleAutoSave() {
+  clearTimeout(state.autoSaveTimer);
+  state.autoSaveTimer = setTimeout(() => {
+    if (state.mode==='essay' && state.currentId && state.dirty) saveDoc('draft', true);
+    if (state.mode==='home' && state.homeDirty) saveDoc('published', true);
+  }, 3000);
+}
+
+// ── SLASH COMMAND ──
+let slashStart = null;
+function handleSlashCommand(mode) {
+  const editor = document.getElementById(mode==='essay'?'editor':'home-editor');
+  const sel = window.getSelection(); if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const text = range.startContainer.textContent || '';
+  const offset = range.startOffset;
+  const before = text.slice(0, offset);
+  const slashIdx = before.lastIndexOf('/');
+  if (slashIdx === -1 || (slashIdx > 0 && before[slashIdx-1] !== ' ' && before[slashIdx-1] !== '\n')) {
+    hideSlashMenu(); return;
+  }
+  const query = before.slice(slashIdx+1).toLowerCase();
+  if (!'image'.startsWith(query)) { hideSlashMenu(); return; }
+  slashStart = { node: range.startContainer, offset: slashIdx, mode };
+  const rect = range.getBoundingClientRect();
+  const menu = document.getElementById('slash-menu');
+  menu.style.display = 'block';
+  menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  menu.style.left = rect.left + 'px';
+}
+
+function hideSlashMenu() { document.getElementById('slash-menu').style.display='none'; slashStart=null; }
+
+function slashInsertImage() {
+  if (slashStart) {
+    const range = document.createRange();
+    range.setStart(slashStart.node, slashStart.offset);
+    range.setEnd(slashStart.node, slashStart.node.textContent.length);
+    range.deleteContents();
+    window.getSelection().collapseToEnd();
+  }
+  hideSlashMenu();
+  if (slashStart?.mode === 'home') document.getElementById('home-img-input').click();
+  else document.getElementById('img-input').click();
+}
+
+// ── LINK POPUP ──
+let savedRange = null;
+function openLinkPopup() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+
+  // Check if selection is inside a link
+  let node = sel.anchorNode;
+  while (node && node.nodeName !== 'A' && node !== document.getElementById('editor') && node !== document.getElementById('home-editor')) {
+    node = node.parentNode;
+  }
+  if (node && node.nodeName === 'A') {
+    // Already a link — just focus it
+    node.style.color = 'var(--blue)';
+    toast('Link: ' + node.href);
+    return;
+  }
+
+  savedRange = range.cloneRange();
+  const rect = range.getBoundingClientRect();
+  const popup = document.getElementById('link-popup');
+  popup.style.display = 'block';
+  popup.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth - 296) + 'px';
+  const input = document.getElementById('link-input');
+  input.value = ''; input.focus();
+}
+
+document.getElementById('link-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const url = document.getElementById('link-input').value.trim();
+    if (url && savedRange) {
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(savedRange);
+      document.execCommand('createLink', false, url.startsWith('http') ? url : 'https://'+url);
+    }
+    closeLinkPopup();
+  }
+  if (e.key === 'Escape') closeLinkPopup();
+});
+
+function closeLinkPopup() { document.getElementById('link-popup').style.display='none'; savedRange=null; }
+
+// ── IMAGES ──
+function triggerImg() { document.getElementById('img-input').click(); }
+function handleImg(input, mode) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.createElement('img'); img.src = e.target.result; img.style.maxWidth='100%';
+    const editor = document.getElementById(mode==='home'?'home-editor':'editor');
+    editor.focus();
+    const sel = window.getSelection();
+    if (sel.rangeCount) { const r=sel.getRangeAt(0); r.insertNode(img); r.collapse(false); }
+    else editor.appendChild(img);
+    if (mode==='home') onHomeInput(); else onEditorInput();
+  };
   reader.readAsDataURL(file); input.value='';
 }
-function buildHomeHtml() {
-  const lines=document.getElementById('home-bio').value.split('\n').filter(l=>l.trim());
-  const bioHtml=lines.map(l=>`    <p>${esc(l)}</p>`).join('\n');
-  const photoSrc=state.homePhoto||'/images/desk.jpg';
-  const workHtml=(state.prevWork||[]).map(w=>`  <div class="prev-item"><a href="${esc(w.url||'#')}" target="_blank">${esc(w.name)}</a><span>— ${esc(w.desc)}</span></div>`).join('\n');
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>dilina bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;font-weight:400;-webkit-font-smoothing:antialiased}.site{max-width:620px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:3rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none;transition:color 0.1s}nav a:hover{color:#37352f}nav a.active{color:#37352f}.content p{font-size:15px;line-height:1.85;margin:0 0 0.9em;color:#37352f}.content a{color:#5b8dd9;text-decoration:none}.content a:hover{text-decoration:underline}.photo{margin:1.75rem 0;border-radius:3px;overflow:hidden;max-width:420px}.photo img{width:100%;display:block;border-radius:3px}hr{border:none;border-top:1px solid #e3e2df;margin:2rem 0}.section-label{font-size:14px;color:#37352f;margin-bottom:0.75rem;font-weight:500}.prev-item{display:flex;align-items:baseline;gap:6px;padding:4px 0;font-size:14px}.prev-item::before{content:'·';color:#9b9a97;flex-shrink:0}.prev-item a{color:#5b8dd9;text-decoration:none}.prev-item a:hover{text-decoration:underline}.prev-item span{color:#9b9a97;font-size:13px}</style></head><body><div class="site"><nav><a href="/" class="active">dilina</a><a href="/writing">writing</a></nav><div class="content">\n${bioHtml}\n  </div><div class="photo"><img src="${photoSrc}" alt="dilina" /></div><hr><p class="section-label">previous work</p>\n${workHtml}\n</div></body></html>`;
+
+// ── FORMAT ──
+function fmt(cmd) {
+  const editor = state.mode==='home' ? document.getElementById('home-editor') : document.getElementById('editor');
+  document.execCommand(cmd, false, null); editor.focus();
+  if (state.mode==='home') onHomeInput(); else onEditorInput();
 }
-async function publishHomePage() {
-  const g=gh(); if(!g.token){openSettings();return;}
-  const btn=document.getElementById('home-publish-btn'); const orig=btn.innerHTML; btn.innerHTML='<span class="spinner"></span>'; btn.disabled=true;
+function fmtBlock(tag) {
+  document.execCommand('formatBlock', false, tag);
+  const editor = state.mode==='home' ? document.getElementById('home-editor') : document.getElementById('editor');
+  editor.focus();
+  if (state.mode==='home') onHomeInput(); else onEditorInput();
+}
+
+// ── VERSION HISTORY ──
+async function loadVersionHistory(slug) {
+  state.versions = [];
   try {
-    const html=buildHomeHtml(); const encoded=btoa(unescape(encodeURIComponent(html)));
-    let sha=state.homeSha||null; if(!sha){try{const ex=await ghApi('contents/index.html');sha=ex.sha;}catch(e){}}
-    const result=await ghApi('contents/index.html','PUT',{message:'update home page',content:encoded,sha:sha||undefined});
-    state.homeSha=result.content?.sha||null; state.homeDirty=false; updateStatus('saved'); toast('home page published!');
-  } catch(e) { toast('error: '+e.message,true); }
-  finally { btn.innerHTML=orig; btn.disabled=false; }
+    const commits = await ghApi(`commits?path=${WRITING_PATH}/${slug}.html&per_page=20`);
+    state.versions = commits.map(c => ({
+      sha: c.sha,
+      timestamp: new Date(c.commit.author.date),
+      label: c.commit.message,
+      author: c.commit.author.name,
+      fileSha: null,
+    }));
+    renderVersionList();
+  } catch(e) {}
 }
+
+function renderVersionList() {
+  const list = document.getElementById('version-list');
+  if (!state.versions.length) { list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text-muted)">No version history yet</div>'; return; }
+  const byMonth = {};
+  state.versions.forEach((v,i) => {
+    const key = v.timestamp.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push({...v, i});
+  });
+  list.innerHTML = Object.entries(byMonth).map(([month, versions]) => `
+    <div class="version-month">${month}</div>
+    ${versions.map(v => `
+      <div class="version-item ${v.i===0?'current':''}" onclick="previewVersion(${v.i})">
+        <div class="version-item-time">${v.timestamp.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, ${v.timestamp.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
+        ${v.i===0?'<div class="version-item-label">Current version</div>':''}
+        <div class="version-item-author"><span class="version-dot"></span>${v.author}</div>
+      </div>`).join('')}
+  `).join('');
+}
+
+async function previewVersion(i) {
+  const v = state.versions[i];
+  try {
+    updateStatus('Loading version...');
+    const commit = await ghApi(`commits/${v.sha}`);
+    const file = commit.files?.find(f => f.filename.includes(WRITING_PATH));
+    if (!file) { toast('Could not load this version', true); return; }
+    const c = await ghApi(`contents/${file.filename}?ref=${v.sha}`);
+    const html = decodeURIComponent(escape(atob(c.content.replace(/\n/g,''))));
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const body = doc.querySelector('.essay-body')?.innerHTML || doc.querySelector('.content')?.innerHTML || '';
+    document.getElementById('editor').innerHTML = body;
+    state.viewingVersion = i;
+    document.getElementById('restore-banner').classList.add('show');
+    document.getElementById('restore-label').textContent = `Viewing version from ${v.timestamp.toLocaleDateString('en-US',{month:'short',day:'numeric'})}, ${v.timestamp.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+    updateStatus('Viewing past version');
+  } catch(e) { toast('Could not load version', true); }
+}
+
+function restoreVersion() {
+  state.dirty = true; updateStatus('Unsaved changes');
+  document.getElementById('restore-banner').classList.remove('show');
+  state.viewingVersion = null; toast('Version restored — publish to make it live');
+}
+
+function closeRestoreBanner() {
+  const essay = state.essays.find(e => e.id===state.currentId);
+  if (essay) document.getElementById('editor').innerHTML = essay.body||'';
+  document.getElementById('restore-banner').classList.remove('show');
+  state.viewingVersion = null; updateStatus('Saved');
+}
+
+function toggleVersionPanel() {
+  const panel = document.getElementById('version-panel');
+  const btn = document.getElementById('history-btn');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) { panel.classList.remove('open'); btn.classList.remove('active'); }
+  else { panel.classList.add('open'); btn.classList.add('active'); }
+}
+function closeVersionPanel() { document.getElementById('version-panel').classList.remove('open'); document.getElementById('history-btn').classList.remove('active'); }
+
+// ── SAVE & PUBLISH ──
+function currentEssayData() {
+  return { title:document.getElementById('essay-title').value||'Untitled', date:document.getElementById('essay-date').value||'', slug:document.getElementById('essay-slug').value||('essay-'+Date.now()), readtime:document.getElementById('essay-readtime').value||'', body:document.getElementById('editor').innerHTML };
+}
+
+async function saveDoc(status, isAutoSave=false) {
+  if (state.publishing) return;
+  if (state.mode==='essay') await saveEssay(status, isAutoSave);
+  if (state.mode==='home') await saveHome(isAutoSave);
+}
+
+async function saveEssay(status, isAutoSave=false) {
+  const data = currentEssayData(); if (!data.slug) { toast('Add a URL slug first', true); return; }
+  const g = gh(); if (!g.token) { openSettings(); return; }
+  state.publishing = true;
+  const btnId = status==='draft'?'draft-btn':'publish-btn'; const btn=document.getElementById(btnId); const orig=btn.innerHTML;
+  if (!isAutoSave) { btn.innerHTML='<span class="spinner"></span>'; btn.disabled=true; }
+  else updateStatus('Saving...');
+  try {
+    const html = buildEssayHtml(data, status); const encoded=btoa(unescape(encodeURIComponent(html)));
+    const path=`${WRITING_PATH}/${data.slug}.html`;
+    let sha=null; try { const ex=await ghApi(`contents/${path}`); sha=ex.sha; } catch(e) {}
+    const essay=state.essays.find(e=>e.id===state.currentId);
+    if (essay?.sha&&essay.slug&&essay.slug!==data.slug) { try { await ghApi(`contents/${WRITING_PATH}/${essay.slug}.html`,'DELETE',{message:`Remove: ${essay.slug}`,sha:essay.sha}); } catch(e) {} }
+    const result=await ghApi(`contents/${path}`,'PUT',{message:`${status==='draft'?'Draft':'Publish'}: ${data.title}`,content:encoded,sha:sha||undefined});
+    const updated={...data,id:data.slug,status,sha:result.content?.sha||null};
+    const idx=state.essays.findIndex(e=>e.id===state.currentId); if(idx>=0) state.essays[idx]=updated; else state.essays.unshift(updated);
+    state.currentId=data.slug; await updateIndex(); renderSidebar(); state.dirty=false;
+    const now=new Date(); updateStatus(`Saved at ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
+    if (!isAutoSave) toast(status==='draft'?'Draft saved':'Published!');
+    await loadVersionHistory(data.slug);
+  } catch(e) { toast('Error: '+e.message, true); }
+  finally { state.publishing=false; if(!isAutoSave){btn.innerHTML=orig;btn.disabled=false;} }
+}
+
+async function saveHome(isAutoSave=false) {
+  const g=gh(); if(!g.token){openSettings();return;}
+  const btn=document.getElementById('publish-btn'); const orig=btn.innerHTML;
+  if (!isAutoSave) { btn.innerHTML='<span class="spinner"></span>'; btn.disabled=true; }
+  else updateStatus('Saving...');
+  try {
+    const content = document.getElementById('home-editor').innerHTML;
+    const html = buildHomeHtml(content); const encoded=btoa(unescape(encodeURIComponent(html)));
+    let sha=state.homeSha||null; if(!sha){try{const ex=await ghApi('contents/index.html');sha=ex.sha;}catch(e){}}
+    const result=await ghApi('contents/index.html','PUT',{message:'Update home page',content:encoded,sha:sha||undefined});
+    state.homeSha=result.content?.sha||null; state.homeDirty=false;
+    const now=new Date(); updateStatus(`Saved at ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
+    if (!isAutoSave) toast('Home page published!');
+  } catch(e) { toast('Error: '+e.message,true); }
+  finally { if(!isAutoSave){btn.innerHTML=orig;btn.disabled=false;} }
+}
+
+async function updateIndex() {
+  const html=buildIndexHtml(state.essays); const encoded=btoa(unescape(encodeURIComponent(html)));
+  const path=`${WRITING_PATH}/index.html`; let sha=null;
+  try { const ex=await ghApi(`contents/${path}`); sha=ex.sha; } catch(e) {}
+  await ghApi(`contents/${path}`,'PUT',{message:'Update writing index',content:encoded,sha:sha||undefined});
+}
+
+// ── DELETE ──
+function deleteEssay() { if(!state.currentId) return; state.pendingDelete=state.currentId; document.getElementById('confirm-modal').classList.remove('hidden'); }
+async function confirmDelete() {
+  document.getElementById('confirm-modal').classList.add('hidden');
+  const essay=state.essays.find(e=>e.id===state.pendingDelete); if(!essay) return;
+  try {
+    if(essay.sha&&essay.slug) await ghApi(`contents/${WRITING_PATH}/${essay.slug}.html`,'DELETE',{message:`Delete: ${essay.slug}`,sha:essay.sha});
+    state.essays=state.essays.filter(e=>e.id!==state.pendingDelete); state.currentId=null; state.dirty=false;
+    await updateIndex(); renderSidebar();
+    document.getElementById('empty-state').style.display=''; document.getElementById('editor-scroll').style.display='none';
+    document.getElementById('toolbar').style.display='none'; document.getElementById('meta-bar-wrap').style.display='none';
+    ['draft-btn','publish-btn','delete-btn'].forEach(id=>document.getElementById(id).style.display='none');
+    updateStatus('No changes'); toast('Deleted');
+  } catch(e) { toast('Error: '+e.message,true); }
+}
+
+// ── HTML BUILDERS ──
+function buildEssayHtml(data, status) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="essay-title" content="${esc(data.title)}"><meta name="essay-date" content="${esc(data.date)}"><meta name="essay-readtime" content="${esc(data.readtime)}"><meta name="essay-status" content="${status}"><title>${esc(data.title)} — Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;font-weight:400;-webkit-font-smoothing:antialiased}.site{max-width:620px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:2.5rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover{color:#37352f}.back{font-size:13px;color:#9b9a97;text-decoration:none;display:inline-block;margin-bottom:2rem}.back:hover{color:#37352f}.essay-title-h{font-size:26px;font-weight:500;line-height:1.25;margin-bottom:8px;letter-spacing:-0.3px}.essay-meta{font-size:13px;color:#9b9a97;margin-bottom:2rem}hr{border:none;border-top:1px solid #e3e2df;margin:0 0 2rem}.essay-body{font-size:15px;line-height:1.85;color:#37352f}.essay-body p{margin:0 0 1em}.essay-body h1{font-size:20px;font-weight:500;margin:1.4em 0 0.5em}.essay-body h2{font-size:16px;font-weight:500;margin:1.2em 0 0.4em}.essay-body img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.essay-body strong{font-weight:500}.essay-body em{font-style:italic}.essay-body a{color:#2383e2;text-decoration:none;border-bottom:1px solid #e8f2fd}.essay-body blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0}.essay-body ul,.essay-body ol{padding-left:22px;margin:0 0 1em}.essay-body li{margin-bottom:0.25em}</style></head><body><div class="site"><nav><a href="/">Dilina</a><a href="/writing">Writing</a></nav><a class="back" href="/writing">← Back</a><h1 class="essay-title-h">${esc(data.title)}</h1><div class="essay-meta">${esc(data.date)}${data.readtime?' · '+esc(data.readtime)+' read':''}</div><hr><div class="essay-body">${data.body}</div></div></body></html>`;
+}
+
+function buildHomeHtml(content) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;font-weight:400;-webkit-font-smoothing:antialiased}.site{max-width:620px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:3rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none;transition:color 0.1s}nav a:hover{color:#37352f}nav a.active{color:#37352f}.content{font-size:15px;line-height:1.85;color:#37352f}.content p{margin:0 0 0.9em}.content a{color:#2383e2;text-decoration:none;border-bottom:1px solid #e8f2fd}.content img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.content strong{font-weight:500}.content em{font-style:italic}.content h1{font-size:20px;font-weight:500;margin:1.4em 0 0.5em}.content h2{font-size:16px;font-weight:500;margin:1.2em 0 0.4em}.content blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0}.content ul,.content ol{padding-left:22px;margin:0 0 1em}.content li{margin-bottom:0.25em}</style></head><body><div class="site"><nav><a href="/" class="active">Dilina</a><a href="/writing">Writing</a></nav><div class="content">${content}</div></div></body></html>`;
+}
+
+function buildIndexHtml(essays) {
+  const published=essays.filter(e=>e.status!=='draft'); const byYear={};
+  published.forEach(e=>{ const y=(e.date||'').split(' ').pop()||'Undated'; if(!byYear[y]) byYear[y]=[]; byYear[y].push(e); });
+  const years=Object.keys(byYear).sort((a,b)=>b-a);
+  const rows=years.map(y=>`<p style="font-size:13px;color:#9b9a97;margin:0 0 6px">${y}</p><ul style="list-style:none;padding:0;margin:0 0 2.5rem">${byYear[y].map(e=>`<li style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #e3e2df"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="flex-shrink:0;margin-top:3px;opacity:0.3"><rect x="2" y="1" width="9" height="12" rx="1" stroke="#37352f" stroke-width="1.1"/><path d="M4 5h5M4 7.5h5M4 10h3" stroke="#37352f" stroke-width="0.9" stroke-linecap="round"/></svg><div><a href="/writing/${e.slug}" style="font-size:14px;color:#37352f;text-decoration:none;display:block;line-height:1.5">${esc(e.title)}</a><div style="font-size:12px;color:#9b9a97;margin-top:2px">${esc(e.date)}${e.readtime?' · '+esc(e.readtime):''}</div></div></li>`).join('')}</ul>`).join('');
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Writing — Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;font-weight:400;-webkit-font-smoothing:antialiased}.site{max-width:620px;margin:0 auto;padding:3rem 1.5rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:3rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover,nav a.active{color:#37352f}h1{font-size:20px;font-weight:500;margin:0 0 2rem}ul li:first-child{border-top:1px solid #e3e2df}</style></head><body><div class="site"><nav><a href="/">Dilina</a><a href="/writing" class="active">Writing</a></nav><h1>Writing</h1>${rows||'<p style="font-size:14px;color:#9b9a97">No essays yet.</p>'}</div></body></html>`;
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown', e => {
+  const inEditor = state.mode==='essay'||state.mode==='home';
+  if (e.key==='Escape') { hideSlashMenu(); closeLinkPopup(); closeVersionPanel(); }
+  if ((e.metaKey||e.ctrlKey) && e.key==='b') { if(inEditor){e.preventDefault();fmt('bold');} }
+  if ((e.metaKey||e.ctrlKey) && e.key==='i') { if(inEditor){e.preventDefault();fmt('italic');} }
+  if ((e.metaKey||e.ctrlKey) && e.key==='k') { if(inEditor){e.preventDefault();openLinkPopup();} }
+  if ((e.metaKey||e.ctrlKey) && e.key==='s') { e.preventDefault(); if(state.mode==='essay'&&state.currentId) saveDoc('draft'); else if(state.mode==='home') saveDoc('published'); }
+  if ((e.metaKey||e.ctrlKey) && e.key==='Enter') { e.preventDefault(); if(state.mode==='essay'&&state.currentId) saveDoc('published'); else if(state.mode==='home') saveDoc('published'); }
+});
+
+// Close slash menu on backspace if query gone
+document.addEventListener('keyup', e => {
+  if (e.key==='Backspace' && document.getElementById('slash-menu').style.display==='block') {
+    const sel=window.getSelection(); if(!sel.rangeCount) return;
+    const range=sel.getRangeAt(0); const text=range.startContainer.textContent||'';
+    if (!text.includes('/')) hideSlashMenu();
+  }
+});
+
+// Close popups on click outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('#slash-menu')) hideSlashMenu();
+  if (!e.target.closest('#link-popup') && !e.target.closest('.tool')) closeLinkPopup();
+});
+
+window.addEventListener('beforeunload', e => { if(state.dirty||state.homeDirty){e.preventDefault();e.returnValue='';} });
+
+let toastTimer;
+function toast(msg, err=false) { const el=document.getElementById('toast'); el.textContent=msg; el.className='show'+(err?' error':''); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='',2800); }
 </script>
 </body>
 </html>
