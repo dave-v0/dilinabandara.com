@@ -928,27 +928,42 @@ async function saveEssay(status, auto=false) {
   if(!auto){btn.innerHTML='<span class="spin"></span>';btn.disabled=true;}
   else setStatus('Saving...');
   try {
-    const html=buildEssay(data,status); const path=`${WP}/${data.slug}.html`;
-    let sha=null; try{const ex=await api(`contents/${path}`);sha=ex.sha;}catch(e){sha=null;}
-    const essayObj=S.essays.find(e=>e.id===S.cur);
-    if(essayObj?.sha&&!sha) sha=essayObj.sha;
-    const essay=S.essays.find(e=>e.id===S.cur);
-    if(essay?.sha&&essay.slug&&essay.slug!==data.slug){
-      try{await api(`contents/${WP}/${essay.slug}.html`,'DELETE',{message:`Remove: ${essay.slug}`,sha:essay.sha});}catch(e){}
+    const html = buildEssay(data, status);
+    const path = `${WP}/${data.slug}.html`;
+
+    // Always fetch fresh SHA — never use cached
+    let sha = null;
+    try { const ex = await api(`contents/${path}`); sha = ex.sha; } catch(e) { sha = null; }
+
+    // If slug changed, delete old file
+    const essay = S.essays.find(e => e.id === S.cur);
+    if (essay && essay.slug && essay.slug !== data.slug) {
+      let oldSha = null;
+      try { const oldEx = await api(`contents/${WP}/${essay.slug}.html`); oldSha = oldEx.sha; } catch(e) {}
+      if (oldSha) {
+        try { await api(`contents/${WP}/${essay.slug}.html`, 'DELETE', { message: `Remove: ${essay.slug}`, sha: oldSha }); } catch(e) {}
+      }
     }
-    const result=await api(`contents/${path}`,'PUT',{
-      message:`${status==='draft'?'Draft':'Publish'}: ${data.title}`,
-      content:b64enc(html), sha:sha||undefined
+
+    const result = await api(`contents/${path}`, 'PUT', {
+      message: `${status === 'draft' ? 'Draft' : 'Publish'}: ${data.title}`,
+      content: b64enc(html),
+      sha: sha || undefined
     });
-    const updated={...data,id:data.slug,status,sha:result.content?.sha||null};
-    const idx=S.essays.findIndex(e=>e.id===S.cur);
-    if(idx>=0) S.essays[idx]=updated; else S.essays.unshift(updated);
-    S.cur=data.slug; S.slugManual=true;
-    await saveIndex(); renderList(); S.dirty=false;
-    const now=new Date(); setStatus(`Saved at ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
-    if(!auto) toast(status==='draft'?'Draft saved':'Published!');
+
+    const updated = { ...data, id: data.slug, status, sha: result.content?.sha || null };
+    const idx = S.essays.findIndex(e => e.id === S.cur);
+    if (idx >= 0) S.essays[idx] = updated; else S.essays.unshift(updated);
+    S.cur = data.slug; S.slugManual = true;
+
+    // Always fetch fresh SHA for index too
+    await saveIndex();
+    renderList(); S.dirty = false;
+    const now = new Date();
+    setStatus(`Saved at ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+    if (!auto) toast(status === 'draft' ? 'Draft saved' : 'Published!');
     loadVersions(data.slug);
-  } catch(e){toast('Error: '+e.message,true);}
+  } catch(e) { toast('Error: ' + e.message, true); }
   finally{S.publishing=false;if(!auto){btn.innerHTML=orig;btn.disabled=false;}}
 }
 
@@ -958,23 +973,27 @@ async function saveHome(auto=false) {
   if(!auto){btn.innerHTML='<span class="spin"></span>';btn.disabled=true;}
   else setStatus('Saving...');
   try {
-    const content=document.getElementById('home-editor').innerHTML;
-    const html=buildHome(content);
-    let sha=null;
-    try { const ex=await api('contents/index.html'); sha=ex.sha; S.homeSha=ex.sha; } catch(e) { sha=null; }
-    const result=await api('contents/index.html','PUT',{message:'Update home page',content:b64enc(html),sha:sha||undefined});
-    S.homeSha=result.content?.sha||null; S.homeDirty=false;
-    const now=new Date(); setStatus(`Saved at ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
-    if(!auto) toast('Home page published!');
-  } catch(e){toast('Error: '+e.message,true);}
+    const content = document.getElementById('home-editor').innerHTML;
+    const html = buildHome(content);
+    // Always fetch fresh SHA
+    let sha = null;
+    try { const ex = await api('contents/index.html'); sha = ex.sha; } catch(e) { sha = null; }
+    const result = await api('contents/index.html', 'PUT', { message: 'Update home page', content: b64enc(html), sha: sha || undefined });
+    S.homeSha = result.content?.sha || null;
+    S.homeDirty = false;
+    const now = new Date();
+    setStatus(`Saved at ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+    if (!auto) toast('Home page published!');
+  } catch(e) { toast('Error: ' + e.message, true); }
   finally{if(!auto){btn.innerHTML=orig;btn.disabled=false;}}
 }
 
 async function saveIndex() {
-  const html=buildIndex(S.essays); const path=`${WP}/index.html`;
-  let sha=null;
-  try { const ex=await api(`contents/${path}`); sha=ex.sha; } catch(e) { sha=null; }
-  await api(`contents/${path}`,'PUT',{message:'Update writing index',content:b64enc(html),sha:sha||undefined});
+  const html = buildIndex(S.essays);
+  const path = `${WP}/index.html`;
+  let sha = null;
+  try { const ex = await api(`contents/${path}`); sha = ex.sha; } catch(e) { sha = null; }
+  await api(`contents/${path}`, 'PUT', { message: 'Update writing index', content: b64enc(html), sha: sha || undefined });
 }
 
 // DELETE
