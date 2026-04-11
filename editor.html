@@ -895,7 +895,9 @@ async function saveEssay(status, auto=false) {
   else setStatus('Saving...');
   try {
     const html=buildEssay(data,status); const path=`${WP}/${data.slug}.html`;
-    let sha=null; try{const ex=await api(`contents/${path}`);sha=ex.sha;}catch(e){}
+    let sha=null; try{const ex=await api(`contents/${path}`);sha=ex.sha;}catch(e){sha=null;}
+    const essayObj=S.essays.find(e=>e.id===S.cur);
+    if(essayObj?.sha&&!sha) sha=essayObj.sha;
     const essay=S.essays.find(e=>e.id===S.cur);
     if(essay?.sha&&essay.slug&&essay.slug!==data.slug){
       try{await api(`contents/${WP}/${essay.slug}.html`,'DELETE',{message:`Remove: ${essay.slug}`,sha:essay.sha});}catch(e){}
