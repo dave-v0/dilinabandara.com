@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dilina bandara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Lora', 'Lyon Text', Georgia, ui-serif, serif;
+    background: #f7f6f3;
+    color: #37352f;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  .site { max-width: 620px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  nav { display: flex; gap: 1.5rem; margin-bottom: 3rem; }
+  nav a { font-size: 14px; color: #9b9a97; text-decoration: none; transition: color 0.1s; }
+  nav a:hover { color: #37352f; }
+  nav a.active { color: #37352f; }
+  .content p { font-size: 15px; line-height: 1.85; margin: 0 0 0.9em; color: #37352f; }
+  .content a { color: #5b8dd9; text-decoration: none; }
+  .content a:hover { text-decoration: underline; }
+  .photo { margin: 1.75rem 0; border-radius: 3px; overflow: hidden; max-width: 420px; }
+  .photo img { width: 100%; display: block; border-radius: 3px; }
+  hr { border: none; border-top: 1px solid #e3e2df; margin: 2rem 0; }
+  .section-label { font-size: 14px; color: #37352f; margin-bottom: 0.75rem; font-weight: 500; }
+  .prev-item { display: flex; align-items: baseline; gap: 6px; padding: 4px 0; font-size: 14px; }
+  .prev-item::before { content: '·'; color: #9b9a97; flex-shrink: 0; }
+  .prev-item a { color: #5b8dd9; text-decoration: none; }
+  .prev-item a:hover { text-decoration: underline; }
+  .prev-item span { color: #9b9a97; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="site">
+  <nav>
+    <a href="/" class="active">dilina</a>
+    <a href="/writing">writing</a>
+  </nav>
+  <div class="content">
+    <p>hey, i'm dilina</p>
+    <p>i'm currently building a startup called <a href="https://justenglish.me" target="_blank">justenglish</a>.</p>
+    <p>it helps non-native speakers speak english confidently.</p>
+    <p>i also write about the ups and downs of the journey in my newsletter (<a href="https://substack.com" target="_blank">substack</a>)</p>
+    <p>on the side, i travel, read, learn to surf, and obsess over how startup exits work.</p>
+    <p>you can email me at <a href="mailto:dilinaedu@gmail.com">dilinaedu@gmail.com</a></p>
+  </div>
+  <div class="photo">
+    <img src="/images/desk.jpg" alt="dilina's workspace" />
+  </div>
+  <hr>
+  <p class="section-label">previous work</p>
+  <div class="prev-item">
+    <a href="#" target="_blank">nomadflow</a>
+    <span>— a platform for digital nomads (moved on after I couldn't validate the idea)</span>
+  </div>
+  <div class="prev-item">
+    <a href="#" target="_blank">arkie digital</a>
+    <span>— a ui/ux design and marketing agency (co-founded when i was 17)</span>
+  </div>
+</div>
+</body>
+</html>
