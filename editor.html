@@ -127,9 +127,9 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 .tsep { width: 1px; height: 16px; background: var(--border); margin: 0 3px; }
 
 /* META BAR — centered to match content */
-#metabar { padding: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; transition: opacity 0.3s ease; display: flex; justify-content: center; }
+#metabar { padding: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; transition: opacity 0.3s ease; }
 #metabar.dnd-hide { opacity: 0; pointer-events: none; }
-.metabar-inner { max-width: 680px; margin: 0; width: 100%; padding: 0 44px; }
+.metabar-inner { max-width: 680px; margin: 0 auto; padding: 0 44px; }
 .meta-title { width: 100%; padding: 18px 0 4px; font-size: 26px; font-weight: 600; font-family: var(--font); border: none; outline: none; color: var(--text); background: transparent; line-height: 1.25; caret-color: var(--blue); }
 .meta-title::placeholder { color: var(--placeholder); }
 .meta-fields { display: flex; gap: 32px; padding: 8px 0 12px; flex-wrap: wrap; }
@@ -139,8 +139,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 .mf-input::placeholder { color: var(--placeholder); }
 
 /* EDITOR AREA */
-#scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
-#editor { max-width: 680px; margin: 0; width: 100%; padding: 28px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); font-weight: 450; }
+#scroll { flex: 1; overflow-y: auto; }
+#editor { max-width: 680px; margin: 0 auto; padding: 28px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); font-weight: 450; }
 #editor:empty::before { content: 'Start writing...'; color: var(--placeholder); pointer-events: none; }
 #editor h1 { font-size: 20px; font-weight: 600; margin: 1.4em 0 .5em; }
 #editor h2 { font-size: 16px; font-weight: 600; margin: 1.2em 0 .4em; }
@@ -155,8 +155,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 #editor li { margin-bottom: .25em; }
 
 /* HOME EDITOR */
-#home-scroll { flex: 1; overflow-y: auto; display: none; flex-direction: column; align-items: center; }
-#home-editor { max-width: 680px; margin: 0; width: 100%; padding: 48px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); font-weight: 450; }
+#home-scroll { flex: 1; overflow-y: auto; display: none; }
+#home-editor { max-width: 680px; margin: 0 auto; padding: 48px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); font-weight: 450; }
 #home-editor:empty::before { content: 'Write your home page...'; color: var(--placeholder); pointer-events: none; }
 #home-editor h1 { font-size: 20px; font-weight: 600; margin: 1.4em 0 .5em; }
 #home-editor h2 { font-size: 16px; font-weight: 600; margin: 1.2em 0 .4em; }
@@ -387,7 +387,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
       <div class="meta-fields">
         <div class="mf"><div class="mf-label">Date</div><input class="mf-input" id="edate" placeholder="April 2026" oninput="markDirty()" /></div>
         <div class="mf"><div class="mf-label">URL Slug</div><input class="mf-input" id="eslug" placeholder="my-essay" oninput="slugManual()" /></div>
-        <div class="mf"><div class="mf-label">Read time</div><input class="mf-input" id="eread" placeholder="5 min" oninput="markDirty()" /></div>
+
       </div>
     </div>
   </div>
@@ -514,7 +514,6 @@ function parseMeta(html,fn) {
     id:slug, slug,
     title:d.querySelector('meta[name="essay-title"]')?.content||'Untitled',
     date:d.querySelector('meta[name="essay-date"]')?.content||'',
-    readtime:d.querySelector('meta[name="essay-readtime"]')?.content||'',
     status:d.querySelector('meta[name="essay-status"]')?.content||'published',
     body:d.querySelector('.essay-body')?.innerHTML||''
   };
@@ -537,7 +536,6 @@ function openEssay(id) {
   document.getElementById('etitle').value=e.title||'';
   document.getElementById('edate').value=e.date||'';
   document.getElementById('eslug').value=e.slug||'';
-  document.getElementById('eread').value=e.readtime||'';
   document.getElementById('editor').innerHTML=e.body||'';
   S.slugManual=true; // existing essay — never auto-overwrite slug
   showEssayPane(); setStatus('Saved'); renderList();
@@ -548,9 +546,9 @@ function openEssay(id) {
 function newEssay() {
   if ((S.dirty||S.homeDirty)&&!confirm('Unsaved changes. Continue?')) return;
   const id='draft-'+Date.now();
-  S.essays.unshift({id,slug:'',title:'',date:'',readtime:'',body:'',status:'draft',sha:null});
+  S.essays.unshift({id,slug:'',title:'',date:'',body:'',status:'draft',sha:null});
   S.cur=id; S.mode='essay'; S.dirty=false; S.slugManual=false;
-  ['etitle','edate','eslug','eread'].forEach(x=>document.getElementById(x).value='');
+  ['etitle','edate','eslug'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('editor').innerHTML='';
   showEssayPane(); renderList(); document.getElementById('etitle').focus(); setStatus('New essay');
   document.getElementById('home-btn').classList.remove('active');
@@ -1004,7 +1002,7 @@ function essayData() {
     title:document.getElementById('etitle').value||'Untitled',
     date:document.getElementById('edate').value||'',
     slug:document.getElementById('eslug').value||('essay-'+Date.now()),
-    readtime:document.getElementById('eread').value||'',
+
     body:document.getElementById('editor').innerHTML
   };
 }
@@ -1136,7 +1134,7 @@ async function confirmDelete() {
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 function buildEssay(d,status){
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="essay-title" content="${esc(d.title)}"><meta name="essay-date" content="${esc(d.date)}"><meta name="essay-readtime" content="${esc(d.readtime)}"><meta name="essay-status" content="${status}"><title>${esc(d.title)} — Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;-webkit-font-smoothing:antialiased}.site{max-width:640px;margin:0 auto;padding:2rem 2rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:2.5rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover{color:#37352f}.back{font-size:13px;color:#9b9a97;text-decoration:none;display:inline-block;margin-bottom:2rem}.back:hover{color:#37352f}.essay-title-h{font-size:26px;font-weight:500;line-height:1.25;margin-bottom:8px}.essay-meta{font-size:13px;color:#9b9a97;margin-bottom:2rem}hr{border:none;border-top:1px solid #e3e2df;margin:0 0 2rem}.essay-body{font-size:15px;line-height:1.85}.essay-body p{margin:0 0 1em}.essay-body h1{font-size:20px;font-weight:500;margin:1.4em 0 .5em}.essay-body h2{font-size:16px;font-weight:500;margin:1.2em 0 .4em}.essay-body img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.essay-body iframe{width:100%;aspect-ratio:16/9;border-radius:6px;margin:1.5em 0;border:none;display:block}.essay-body strong{font-weight:500}.essay-body em{font-style:italic}.essay-body a{color:#2383e2;text-decoration:none}.essay-body blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0;font-style:italic}.essay-body ul,.essay-body ol{padding-left:22px;margin:0 0 1em}.essay-body li{margin-bottom:.25em}</style></head><body><div class="site"><nav><a href="/">Dilina</a><a href="/writing">Writing</a></nav><a class="back" href="/writing">← Back</a><h1 class="essay-title-h">${esc(d.title)}</h1><div class="essay-meta">${esc(d.date)}${d.readtime?' · '+esc(d.readtime)+' read':''}</div><hr><div class="essay-body">${d.body}</div></div></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="essay-title" content="${esc(d.title)}"><meta name="essay-date" content="${esc(d.date)}"><meta name="essay-status" content="${status}"><title>${esc(d.title)} — Dilina Bandara</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lora','Lyon Text',Georgia,ui-serif,serif;background:#f7f6f3;color:#37352f;-webkit-font-smoothing:antialiased}.site{max-width:640px;margin:0 auto;padding:2rem 2rem 5rem}nav{display:flex;gap:1.5rem;margin-bottom:2.5rem}nav a{font-size:14px;color:#9b9a97;text-decoration:none}nav a:hover{color:#37352f}.back{font-size:13px;color:#9b9a97;text-decoration:none;display:inline-block;margin-bottom:2rem}.back:hover{color:#37352f}.essay-title-h{font-size:26px;font-weight:500;line-height:1.25;margin-bottom:8px}.essay-meta{font-size:13px;color:#9b9a97;margin-bottom:2rem}hr{border:none;border-top:1px solid #e3e2df;margin:0 0 2rem}.essay-body{font-size:15px;line-height:1.85}.essay-body p{margin:0 0 1em}.essay-body h1{font-size:20px;font-weight:500;margin:1.4em 0 .5em}.essay-body h2{font-size:16px;font-weight:500;margin:1.2em 0 .4em}.essay-body img{max-width:100%;border-radius:3px;display:block;margin:1.5em 0}.essay-body iframe{width:100%;aspect-ratio:16/9;border-radius:6px;margin:1.5em 0;border:none;display:block}.essay-body strong{font-weight:500}.essay-body em{font-style:italic}.essay-body a{color:#2383e2;text-decoration:none}.essay-body blockquote{border-left:2px solid #e3e2df;padding-left:16px;color:#9b9a97;margin:1em 0;font-style:italic}.essay-body ul,.essay-body ol{padding-left:22px;margin:0 0 1em}.essay-body li{margin-bottom:.25em}</style></head><body><div class="site"><nav><a href="/">Dilina</a><a href="/writing">Writing</a></nav><a class="back" href="/writing">← Back</a><h1 class="essay-title-h">${esc(d.title)}</h1><div class="essay-meta">${esc(d.date)}</div><hr><div class="essay-body">${d.body}</div></div></body></html>`;
 }
 
 function buildHome(content){
@@ -1157,7 +1155,7 @@ function buildIndex(essays){
       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" style="flex-shrink:0;opacity:0.4"><rect x="2" y="1" width="9" height="12" rx="1" stroke="#37352f" stroke-width="1.1"/><path d="M4 5h5M4 7.5h5M4 10h3" stroke="#37352f" stroke-width=".9" stroke-linecap="round"/></svg>
       <span style="display:inline-flex;align-items:baseline;gap:6px">
         <a href="/writing/${e.slug}" style="font-size:15px;color:#37352f;text-decoration:none;border-bottom:1px solid #e3e2df;padding-bottom:1px">${esc(e.title)}</a>
-        <span style="font-size:13px;color:#9b9a97;white-space:nowrap">${e.date||e.readtime?'('+[e.date,e.readtime?e.readtime+' read':''].filter(Boolean).join(' · ')+')':''}</span>
+        <span style="font-size:13px;color:#9b9a97;white-space:nowrap">${e.date?'('+e.date+')':''}</span>
       </span>
     </div>`).join('')}
   `).join('');
