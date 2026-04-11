@@ -474,18 +474,37 @@ function b64enc(s) { return btoa(unescape(encodeURIComponent(s))); }
 async function loadEssays() {
   document.getElementById('elist').innerHTML='<div style="padding:8px;font-size:12px;color:var(--muted)">Loading...</div>';
   try {
+    const g = gh();
+    if (!g.tok || !g.usr || !g.repo) {
+      document.getElementById('elist').innerHTML='<div style="padding:8px;font-size:12px;color:var(--muted)">Check settings ↗</div>';
+      return;
+    }
     const files = await api(`contents/${WP}`);
+    if (!Array.isArray(files)) {
+      document.getElementById('elist').innerHTML='<div style="padding:8px;font-size:12px;color:var(--muted)">Could not read writing folder</div>';
+      return;
+    }
     const htmlFiles = files.filter(f => f.name.endsWith('.html') && f.name !== 'index.html');
+    if (!htmlFiles.length) {
+      document.getElementById('elist').innerHTML='<div style="padding:8px;font-size:12px;color:var(--muted)">No essays yet</div>';
+      S.essays = []; return;
+    }
     const essays = [];
     for (const f of htmlFiles) {
-      const c = await api(`contents/${WP}/${f.name}`);
-      const html = b64dec(c.content);
-      const parsed = parseMeta(html, f.name);
-      essays.push({ ...parsed, sha: null }); // always fetch fresh sha at save time
+      try {
+        const c = await api(`contents/${WP}/${f.name}`);
+        const html = b64dec(c.content);
+        const parsed = parseMeta(html, f.name);
+        essays.push({ ...parsed, sha: null });
+      } catch(e) {
+        console.warn('Could not load essay:', f.name, e.message);
+      }
     }
-    S.essays = essays; renderList();
+    S.essays = essays;
+    renderList();
   } catch(e) {
-    document.getElementById('elist').innerHTML='<div style="padding:8px;font-size:12px;color:var(--muted)">Check settings ↗</div>';
+    console.error('loadEssays failed:', e.message);
+    document.getElementById('elist').innerHTML=`<div style="padding:8px;font-size:12px;color:var(--muted)">Error loading essays: ${e.message}</div>`;
   }
 }
 
