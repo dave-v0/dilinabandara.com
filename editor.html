@@ -59,13 +59,16 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 .sb-btn { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--r); cursor: pointer; font-size: 13px; color: var(--muted); border: none; background: none; width: 100%; font-family: var(--font); text-align: left; transition: background .1s, color .1s; font-weight: 450; }
 .sb-btn:hover, .sb-btn.active { background: var(--hover); color: var(--text); }
 .essay-list { flex: 1; overflow-y: auto; padding: 3px 6px 8px; }
-.ei { padding: 7px 8px; border-radius: var(--r); cursor: pointer; margin-bottom: 1px; transition: background .1s; }
+.ei { padding: 7px 8px; border-radius: var(--r); cursor: pointer; margin-bottom: 1px; transition: background .1s; display: flex; align-items: center; gap: 7px; }
 .ei:hover, .ei.active { background: var(--hover); }
 .ei-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 450; }
 .ei-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.badge { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 3px; }
-.badge-live { background: var(--green-bg); color: var(--green); }
-.badge-draft { background: var(--hover); color: var(--muted); }
+.ei-status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ei-status-dot.live { background: #4caf89; }
+.ei-status-dot.draft { background: #f0c060; }
+.ei-text { flex: 1; min-width: 0; }
+.pub-section-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; padding: 8px 14px 3px; }
+.sb-divider { height: 1px; background: var(--border); margin: 6px 8px; }
 .sb-foot { padding: 10px 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); display: flex; gap: 10px; }
 .sb-foot span, .sb-foot a { cursor: pointer; color: var(--muted); text-decoration: none; }
 .sb-foot span:hover, .sb-foot a:hover { color: var(--text); }
@@ -520,13 +523,44 @@ function parseMeta(html,fn) {
 }
 
 function renderList() {
-  const el=document.getElementById('elist');
-  if (!S.essays.length) { el.innerHTML='<div style="padding:8px;font-size:12px;color:var(--muted)">No essays yet</div>'; return; }
-  el.innerHTML=S.essays.map(e=>`
-    <div class="ei ${e.id===S.cur?'active':''}" onclick="openEssay('${e.id}')">
-      <div class="ei-title">${e.title}<span class="badge ${e.status==='draft'?'badge-draft':'badge-live'}">${e.status==='draft'?'Draft':'Live'}</span></div>
-      <div class="ei-meta">${e.date||'No date'}</div>
-    </div>`).join('');
+  const el = document.getElementById('elist');
+  const drafts = S.essays.filter(e => e.status === 'draft');
+  const published = S.essays.filter(e => e.status !== 'draft');
+
+  let html = '';
+
+  if (drafts.length) {
+    html += drafts.map(e => `
+      <div class="ei ${e.id===S.cur?'active':''}" onclick="openEssay('${e.id}')">
+        <span class="ei-status-dot draft"></span>
+        <div class="ei-text">
+          <div class="ei-title">${e.title||'Untitled'}</div>
+          <div class="ei-meta">Draft</div>
+        </div>
+      </div>`).join('');
+
+    if (published.length) {
+      html += '<div class="sb-divider"></div>';
+      html += '<div class="pub-section-label">Published</div>';
+    }
+  }
+
+  if (published.length) {
+    html += published.map(e => `
+      <div class="ei ${e.id===S.cur?'active':''}" onclick="openEssay('${e.id}')">
+        <span class="ei-status-dot live"></span>
+        <div class="ei-text">
+          <div class="ei-title">${e.title||'Untitled'}</div>
+          <div class="ei-meta">${e.date||'No date'}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  if (!html) {
+    html = '<div style="padding:8px;font-size:12px;color:var(--muted)">No essays yet</div>';
+  }
+
+  el.innerHTML = html;
 }
 
 function openEssay(id) {
