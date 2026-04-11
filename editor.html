@@ -73,7 +73,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 #main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; min-width: 0; }
 
 /* VERSION PANEL — slides in from right as overlay */
-#vpanel { position: absolute; top: 0; right: 0; bottom: 0; width: 250px; background: var(--sb); border-left: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; transform: translateX(100%); transition: transform 0.25s ease; }
+#vpanel { position: absolute; top: 48px; right: 0; bottom: 0; width: 250px; background: var(--sb); border-left: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; transform: translateX(100%); transition: transform 0.25s ease; }
 #vpanel.open { transform: translateX(0); }
 .vp-head { padding: 13px 12px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .vp-title { font-size: 13px; font-weight: 500; }
@@ -128,7 +128,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 /* META BAR — centered to match content */
 #metabar { padding: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; transition: opacity 0.3s ease; }
 #metabar.dnd-hide { opacity: 0; pointer-events: none; }
-.metabar-inner { max-width: var(--content-w); margin: 0 auto; padding: 0 44px; }
+.metabar-inner { max-width: var(--content-w); margin-left: calc(50% - var(--content-w)/2 + var(--sidebar-w)/2); margin-right: auto; padding: 0 44px; }
 .meta-title { width: 100%; padding: 18px 0 4px; font-size: 26px; font-weight: 500; font-family: var(--font); border: none; outline: none; color: var(--text); background: transparent; line-height: 1.25; caret-color: var(--blue); }
 .meta-title::placeholder { color: var(--placeholder); }
 .meta-fields { display: flex; gap: 32px; padding: 8px 0 12px; flex-wrap: wrap; }
@@ -139,7 +139,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 
 /* EDITOR AREA */
 #scroll { flex: 1; overflow-y: auto; }
-#editor { max-width: var(--content-w); margin: 0 auto; padding: 28px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); }
+#editor { max-width: var(--content-w); margin-left: calc(50% - var(--content-w)/2 + var(--sidebar-w)/2); margin-right: auto; padding: 28px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); }
 #editor:empty::before { content: 'Start writing...'; color: var(--placeholder); pointer-events: none; }
 #editor h1 { font-size: 20px; font-weight: 500; margin: 1.4em 0 .5em; }
 #editor h2 { font-size: 16px; font-weight: 500; margin: 1.2em 0 .4em; }
@@ -155,7 +155,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 
 /* HOME EDITOR */
 #home-scroll { flex: 1; overflow-y: auto; display: none; }
-#home-editor { max-width: var(--content-w); margin: 0 auto; padding: 48px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); }
+#home-editor { max-width: var(--content-w); margin-left: calc(50% - var(--content-w)/2 + var(--sidebar-w)/2); margin-right: auto; padding: 48px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); }
 #home-editor:empty::before { content: 'Write your home page...'; color: var(--placeholder); pointer-events: none; }
 #home-editor h1 { font-size: 20px; font-weight: 500; margin: 1.4em 0 .5em; }
 #home-editor h2 { font-size: 16px; font-weight: 500; margin: 1.2em 0 .4em; }
@@ -581,6 +581,17 @@ function toggleDND() {
     // hide other topbar elements except the moon
     document.querySelectorAll('.tb-right > *:not(#dnd-btn)').forEach(el=>{ el.style.opacity='0'; el.style.pointerEvents='none'; });
     document.querySelector('.tb-status') && (document.getElementById('status').style.opacity='0');
+    document.getElementById('topbar').style.height='0';
+    document.getElementById('topbar').style.padding='0';
+    document.getElementById('topbar').style.overflow='hidden';
+    document.getElementById('topbar').style.borderBottom='none';
+    document.getElementById('toolbar').style.height='0';
+    document.getElementById('toolbar').style.padding='0';
+    document.getElementById('toolbar').style.overflow='hidden';
+    document.getElementById('toolbar').style.borderBottom='none';
+    document.getElementById('metabar').style.height='0';
+    document.getElementById('metabar').style.overflow='hidden';
+    document.getElementById('metabar').style.borderBottom='none';
   } else {
     sidebar.classList.remove('dnd-hide');
     toolbar.classList.remove('dnd-hide');
@@ -589,6 +600,17 @@ function toggleDND() {
     moon.innerHTML='<path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>';
     document.querySelectorAll('.tb-right > *:not(#dnd-btn)').forEach(el=>{ el.style.opacity=''; el.style.pointerEvents=''; });
     document.getElementById('status').style.opacity='';
+    document.getElementById('topbar').style.height='';
+    document.getElementById('topbar').style.padding='';
+    document.getElementById('topbar').style.overflow='';
+    document.getElementById('topbar').style.borderBottom='';
+    document.getElementById('toolbar').style.height='';
+    document.getElementById('toolbar').style.padding='';
+    document.getElementById('toolbar').style.overflow='';
+    document.getElementById('toolbar').style.borderBottom='';
+    document.getElementById('metabar').style.height='';
+    document.getElementById('metabar').style.overflow='';
+    document.getElementById('metabar').style.borderBottom='';
   }
 }
 
@@ -1001,6 +1023,15 @@ document.addEventListener('keyup',e=>{
     if(!r.startContainer.textContent.includes('/')) hideSlash();
   }
 });
+
+// PASTE — strip formatting
+function stripPaste(e){
+  e.preventDefault();
+  const text=(e.clipboardData||window.clipboardData).getData('text/plain');
+  document.execCommand('insertText',false,text);
+}
+document.getElementById('editor').addEventListener('paste',stripPaste);
+document.getElementById('home-editor').addEventListener('paste',stripPaste);
 
 document.addEventListener('click',e=>{
   if(!e.target.closest('#slash-menu')) hideSlash();
