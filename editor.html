@@ -128,7 +128,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 /* META BAR — centered to match content */
 #metabar { padding: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; transition: opacity 0.3s ease; }
 #metabar.dnd-hide { opacity: 0; pointer-events: none; }
-.metabar-inner { max-width: var(--content-w); margin-left: calc(50% - var(--content-w)/2 + var(--sidebar-w)/2); margin-right: auto; padding: 0 44px; }
+.metabar-inner { max-width: 680px; margin: 0 auto; padding: 0 44px; }
 .meta-title { width: 100%; padding: 18px 0 4px; font-size: 26px; font-weight: 500; font-family: var(--font); border: none; outline: none; color: var(--text); background: transparent; line-height: 1.25; caret-color: var(--blue); }
 .meta-title::placeholder { color: var(--placeholder); }
 .meta-fields { display: flex; gap: 32px; padding: 8px 0 12px; flex-wrap: wrap; }
@@ -139,7 +139,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 
 /* EDITOR AREA */
 #scroll { flex: 1; overflow-y: auto; }
-#editor { max-width: var(--content-w); margin-left: calc(50% - var(--content-w)/2 + var(--sidebar-w)/2); margin-right: auto; padding: 28px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); }
+#editor { max-width: 680px; margin: 0 auto; padding: 28px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); }
 #editor:empty::before { content: 'Start writing...'; color: var(--placeholder); pointer-events: none; }
 #editor h1 { font-size: 20px; font-weight: 500; margin: 1.4em 0 .5em; }
 #editor h2 { font-size: 16px; font-weight: 500; margin: 1.2em 0 .4em; }
@@ -155,7 +155,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 
 /* HOME EDITOR */
 #home-scroll { flex: 1; overflow-y: auto; display: none; }
-#home-editor { max-width: var(--content-w); margin-left: calc(50% - var(--content-w)/2 + var(--sidebar-w)/2); margin-right: auto; padding: 48px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); }
+#home-editor { max-width: 680px; margin: 0 auto; padding: 48px 44px 120px; min-height: 100%; font-family: var(--font); font-size: 15px; line-height: 1.85; color: var(--text); outline: none; caret-color: var(--blue); }
 #home-editor:empty::before { content: 'Write your home page...'; color: var(--placeholder); pointer-events: none; }
 #home-editor h1 { font-size: 20px; font-weight: 500; margin: 1.4em 0 .5em; }
 #home-editor h2 { font-size: 16px; font-weight: 500; margin: 1.2em 0 .4em; }
@@ -572,19 +572,7 @@ function toggleDND() {
   const metabar=document.getElementById('metabar');
 
   if (S.dnd) {
-    sidebar.classList.add('dnd-hide');
-    toolbar.classList.add('dnd-hide');
-    metabar.classList.add('dnd-hide');
-    btn.classList.add('active');
-    // fill the moon icon
-    moon.innerHTML='<path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>';
-    // hide other topbar elements except the moon
-    document.querySelectorAll('.tb-right > *:not(#dnd-btn)').forEach(el=>{ el.style.opacity='0'; el.style.pointerEvents='none'; });
-    document.querySelector('.tb-status') && (document.getElementById('status').style.opacity='0');
-    document.getElementById('topbar').style.height='0';
-    document.getElementById('topbar').style.padding='0';
-    document.getElementById('topbar').style.overflow='hidden';
-    document.getElementById('topbar').style.borderBottom='none';
+    document.getElementById('sidebar').classList.add('dnd-hide');
     document.getElementById('toolbar').style.height='0';
     document.getElementById('toolbar').style.padding='0';
     document.getElementById('toolbar').style.overflow='hidden';
@@ -592,18 +580,12 @@ function toggleDND() {
     document.getElementById('metabar').style.height='0';
     document.getElementById('metabar').style.overflow='hidden';
     document.getElementById('metabar').style.borderBottom='none';
+    document.querySelectorAll('.tb-right > *:not(#dnd-btn)').forEach(el=>{ el.style.opacity='0'; el.style.pointerEvents='none'; });
+    document.getElementById('status').style.opacity='0';
+    document.getElementById('dnd-btn').classList.add('active');
+    moon.innerHTML='<path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>';
   } else {
-    sidebar.classList.remove('dnd-hide');
-    toolbar.classList.remove('dnd-hide');
-    metabar.classList.remove('dnd-hide');
-    btn.classList.remove('active');
-    moon.innerHTML='<path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>';
-    document.querySelectorAll('.tb-right > *:not(#dnd-btn)').forEach(el=>{ el.style.opacity=''; el.style.pointerEvents=''; });
-    document.getElementById('status').style.opacity='';
-    document.getElementById('topbar').style.height='';
-    document.getElementById('topbar').style.padding='';
-    document.getElementById('topbar').style.overflow='';
-    document.getElementById('topbar').style.borderBottom='';
+    document.getElementById('sidebar').classList.remove('dnd-hide');
     document.getElementById('toolbar').style.height='';
     document.getElementById('toolbar').style.padding='';
     document.getElementById('toolbar').style.overflow='';
@@ -611,6 +593,10 @@ function toggleDND() {
     document.getElementById('metabar').style.height='';
     document.getElementById('metabar').style.overflow='';
     document.getElementById('metabar').style.borderBottom='';
+    document.querySelectorAll('.tb-right > *:not(#dnd-btn)').forEach(el=>{ el.style.opacity=''; el.style.pointerEvents=''; });
+    document.getElementById('status').style.opacity='';
+    document.getElementById('dnd-btn').classList.remove('active');
+    moon.innerHTML='<path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>';
   }
 }
 
